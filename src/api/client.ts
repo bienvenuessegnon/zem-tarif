@@ -26,12 +26,6 @@ export type BilanFiabiliteDistant = {
   libelle: string;
 };
 
-export type ZoneDemandee = {
-  label: string;
-  lat: number;
-  lon: number;
-  nb: number;
-};
 
 /**
  * Adresse de l'API. Une chaîne vide (EXPO_PUBLIC_API_URL=) désactive
@@ -205,22 +199,6 @@ export async function telechargerFiabilite(): Promise<BilanFiabiliteDistant | nu
   }
 }
 
-export async function telechargerZonesDemandees(): Promise<ZoneDemandee[]> {
-  const base = urlApi();
-  if (!base) return [];
-  const controleur = new AbortController();
-  const timer = setTimeout(() => controleur.abort(), 10_000);
-  try {
-    const reponse = await fetch(`${base}/zones-demandees`, { signal: controleur.signal });
-    if (!reponse.ok) return [];
-    const data = (await reponse.json()) as { zones?: ZoneDemandee[] };
-    return Array.isArray(data.zones) ? data.zones : [];
-  } catch {
-    return [];
-  } finally {
-    clearTimeout(timer);
-  }
-}
 
 export async function supprimerSignalementDistant(id: string): Promise<boolean> {
   const base = urlApi();

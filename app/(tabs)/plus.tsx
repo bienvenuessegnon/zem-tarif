@@ -6,8 +6,8 @@ import { Bouton } from '@/components/Bouton';
 import { Icone, type NomIcone } from '@/components/Icone';
 import { useProfil } from '@/src/contenu/contexte-profil';
 import { SLOGAN } from '@/src/contenu/slogan';
-import { toucherLeger, toucherSucces } from '@/src/contenu/haptique';
-import { enregistrerRole, revoirOnboarding } from '@/src/storage/profil';
+import { toucherSucces } from '@/src/contenu/haptique';
+import { revoirOnboarding } from '@/src/storage/profil';
 import { couleurs } from '@/src/theme/colors';
 import { typo } from '@/src/theme/typo';
 import { rayon } from '@/src/theme/espace';
@@ -46,39 +46,6 @@ export default function EcranPlus() {
         accessibilityLabel="Prénom ou pseudo"
       />
       <Bouton titre={sauve ? 'Enregistré' : 'Enregistrer'} onPress={sauver} disabled={sauve} />
-
-      <Text style={[styles.titre, { marginTop: 32 }]}>Vous êtes</Text>
-      <Text style={styles.p}>
-        L’application sert de prix de référence aux passagers comme aux conducteurs. Ce choix reste
-        sur cet appareil.
-      </Text>
-      <View style={styles.roles}>
-        <Pressable
-          onPress={async () => {
-            const suivant = await enregistrerRole('passager');
-            await enregistrer(suivant);
-            void toucherLeger();
-          }}
-          style={[styles.role, profil.role !== 'conducteur' && styles.roleActif]}
-        >
-          <Icone nom="user" taille={16} couleur={couleurs.encre} />
-          <Text style={styles.roleTexte}>Passager</Text>
-        </Pressable>
-        <Pressable
-          onPress={async () => {
-            const suivant = await enregistrerRole('conducteur');
-            await enregistrer(suivant);
-            void toucherLeger();
-          }}
-          style={[styles.role, profil.role === 'conducteur' && styles.roleActif]}
-        >
-          <Icone nom="truck" taille={16} couleur={couleurs.encre} />
-          <Text style={styles.roleTexte}>Conducteur</Text>
-        </Pressable>
-      </View>
-      {profil.role === 'conducteur' ? (
-        <Ligne icone="truck" titre="Ouvrir l’espace zémidjan" onPress={() => router.push('/espace-zem')} />
-      ) : null}
 
       <Text style={[styles.titre, { marginTop: 32 }]}>L’application</Text>
       <Ligne icone="shield" titre="Conseils de négociation et de sécurité" onPress={() => router.push('/conseils')} />
@@ -159,19 +126,4 @@ const styles = StyleSheet.create({
   },
   ligneTitre: { fontFamily: typo.medium, fontSize: 15, color: couleurs.encre },
   ligneNote: { fontFamily: typo.regular, fontSize: 12, color: couleurs.muet, marginTop: 2 },
-  roles: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  role: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: couleurs.surface,
-    borderRadius: rayon.md,
-    borderWidth: 1,
-    borderColor: couleurs.ligne,
-    paddingVertical: 14,
-  },
-  roleActif: { backgroundColor: couleurs.orPale, borderColor: couleurs.or },
-  roleTexte: { fontFamily: typo.medium, fontSize: 15, color: couleurs.encre },
 });

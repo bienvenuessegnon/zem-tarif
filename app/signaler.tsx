@@ -6,7 +6,6 @@ import { Bouton } from '@/components/Bouton';
 import { Icone } from '@/components/Icone';
 import { envoyerSignalement, telechargerFiabilite } from '@/src/api/client';
 import { lireBrouillon } from '@/src/contenu/brouillon';
-import { useProfil } from '@/src/contenu/contexte-profil';
 import { toucherSucces } from '@/src/contenu/haptique';
 import { nouvelId } from '@/src/contenu/identifiants';
 import { formatFcfa, formatKm } from '@/src/pricing/format';
@@ -17,7 +16,6 @@ import { utiliserReseau } from '@/src/reseau/etat';
 import { idAppareil } from '@/src/storage/appareil';
 import { ajouterHistorique } from '@/src/storage/historique';
 import { lireProfil } from '@/src/storage/profil';
-import { ajouterRecette } from '@/src/storage/recettes';
 import { ajouterSignalement, lireSignalements } from '@/src/storage/signalements';
 import { couleurs } from '@/src/theme/colors';
 import { typo } from '@/src/theme/typo';
@@ -26,15 +24,11 @@ import { rayon } from '@/src/theme/espace';
 export default function EcranSignaler() {
   const router = useRouter();
   const brouillon = lireBrouillon();
-  const { profil } = useProfil();
   const enLigne = utiliserReseau();
   const [prix, setPrix] = useState(brouillon ? String(brouillon.estimation.point) : '');
   const [nuit, setNuit] = useState(brouillon ? estNuit(brouillon.heure) : false);
   const [pluie, setPluie] = useState(Boolean(brouillon?.pluie));
   const [bagage, setBagage] = useState(false);
-  const [role, setRole] = useState<'passager' | 'conducteur'>(
-    profil.role === 'conducteur' ? 'conducteur' : 'passager',
-  );
   const [message, setMessage] = useState<string | null>(null);
   const [envoi, setEnvoi] = useState(false);
   const [bilan, setBilan] = useState<BilanFiabilite | null>(null);
@@ -103,7 +97,7 @@ export default function EcranSignaler() {
       nuit,
       pluie,
       bagage,
-      role,
+      role: 'passager',
       prixRefFcfa: ref,
       poids: poidsSignalement(Math.round(valeur), ref),
       heure: brouillon.heure,
@@ -128,14 +122,6 @@ export default function EcranSignaler() {
       sourcePrix: brouillon.estimation.sourcePrix,
       enregistreLe: avis.enregistreLe,
     });
-    if (role === 'conducteur') {
-      await ajouterRecette({
-        prixFcfa: avis.prixPayeFcfa,
-        de: brouillon.origin.label,
-        vers: brouillon.dest.label,
-        enregistreLe: avis.enregistreLe,
-      });
-    }
     const distant = await envoyerSignalement(avis);
     setEnvoi(false);
     setMessage(
@@ -194,16 +180,6 @@ export default function EcranSignaler() {
         <JetonTag actif={bagage} titre="Bagage" icone="briefcase" onPress={() => setBagage((v) => !v)} />
       </View>
 
-      <Text style={styles.etiquette}>Vous êtes</Text>
-      <View style={styles.jetons}>
-        <JetonTag actif={role === 'passager'} titre="Passager" icone="user" onPress={() => setRole('passager')} />
-        <JetonTag
-          actif={role === 'conducteur'}
-          titre="Conducteur"
-          icone="truck"
-          onPress={() => setRole('conducteur')}
-        />
-      </View>
 
       <View style={styles.fiab}>
         {bilan && bilan.nb > 0 ? (

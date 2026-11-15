@@ -6,11 +6,8 @@ import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { toucherLeger } from '@/src/contenu/haptique';
 import { couleurs } from '@/src/theme/colors';
 import { typo } from '@/src/theme/typo';
-import { useProfil } from '@/src/contenu/contexte-profil';
 
 export default function Onglets() {
-  const { profil } = useProfil();
-  const conducteur = profil.role === 'conducteur';
   return (
     <Tabs
       screenOptions={{
@@ -58,18 +55,7 @@ export default function Onglets() {
         options={{
           title: 'Historique',
           tabBarLabel: 'Trajets',
-          href: conducteur ? null : undefined,
           tabBarIcon: ({ color }) => <IconeOnglet nom="clock" couleur={String(color ?? '#8A8A86')} />,
-        }}
-      />
-      <Tabs.Screen
-        name="espace-zem"
-        options={{
-          title: 'Espace zémidjan',
-          tabBarLabel: 'Course',
-          headerShown: false,
-          href: conducteur ? undefined : null,
-          tabBarIcon: ({ color }) => <IconeOnglet nom="truck" couleur={String(color ?? '#8A8A86')} />,
         }}
       />
       <Tabs.Screen

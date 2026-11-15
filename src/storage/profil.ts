@@ -2,15 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { CLE_PROFIL } from './cles';
 
-export type RoleUtilisateur = 'passager' | 'conducteur';
-
 export type Profil = {
   pseudo: string;
   onboardingVu: boolean;
-  role: RoleUtilisateur;
 };
 
-const VIDE: Profil = { pseudo: '', onboardingVu: false, role: 'passager' };
+const VIDE: Profil = { pseudo: '', onboardingVu: false };
 
 export async function lireProfil(): Promise<Profil> {
   const brut = await AsyncStorage.getItem(CLE_PROFIL);
@@ -20,7 +17,6 @@ export async function lireProfil(): Promise<Profil> {
     return {
       pseudo: typeof data.pseudo === 'string' ? data.pseudo.slice(0, 32) : '',
       onboardingVu: Boolean(data.onboardingVu),
-      role: data.role === 'conducteur' ? 'conducteur' : 'passager',
     };
   } catch {
     return { ...VIDE };
@@ -38,17 +34,9 @@ export async function enregistrerPseudo(pseudo: string): Promise<Profil> {
   return suivant;
 }
 
-export async function enregistrerRole(role: RoleUtilisateur): Promise<Profil> {
-  const actuel = await lireProfil();
-  const suivant = { ...actuel, role };
-  await ecrireProfil(suivant);
-  return suivant;
-}
-
 export async function marquerOnboardingVu(pseudo?: string): Promise<Profil> {
   const actuel = await lireProfil();
   const suivant: Profil = {
-    ...actuel,
     onboardingVu: true,
     pseudo: (pseudo ?? actuel.pseudo).trim().slice(0, 32),
   };

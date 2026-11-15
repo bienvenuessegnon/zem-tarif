@@ -35,7 +35,7 @@ export default function Racine() {
     PlusJakartaSans_700Bold: require('../assets/fonts/PlusJakartaSans_700Bold.ttf'),
   });
   const [phase, setPhase] = useState<Phase>('chargement');
-  const [profil, setProfil] = useState<Profil>({ pseudo: '', onboardingVu: false, role: 'passager' });
+  const [profil, setProfil] = useState<Profil>({ pseudo: '', onboardingVu: false });
 
   useEffect(() => {
     if (error) throw error;
