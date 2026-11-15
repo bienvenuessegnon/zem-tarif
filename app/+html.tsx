@@ -27,7 +27,7 @@ export default function RacineHtml({ children }: { children: ReactNode }) {
 const css = `
   html, body, #root { height: 100%; }
   body {
-    background-color: #F4F1EA;
+    background-color: #F4F4F2;
     margin: 0;
   }
   input, textarea, button { font-family: inherit; }

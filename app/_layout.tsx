@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { Platform, View } from 'react-native';
 
 import { couleurs } from '@/src/theme/colors';
+import { typo } from '@/src/theme/typo';
 
 export { ErrorBoundary } from 'expo-router';
 
@@ -17,12 +18,10 @@ SplashScreen.preventAutoHideAsync();
 
 export default function Racine() {
   const [loaded, error] = useFonts({
-    SourceSans3_400Regular: require('../assets/fonts/SourceSans3_400Regular.ttf'),
-    SourceSans3_600SemiBold: require('../assets/fonts/SourceSans3_600SemiBold.ttf'),
-    SourceSans3_700Bold: require('../assets/fonts/SourceSans3_700Bold.ttf'),
-    SourceSerif4_400Regular: require('../assets/fonts/SourceSerif4_400Regular.ttf'),
-    SourceSerif4_600SemiBold: require('../assets/fonts/SourceSerif4_600SemiBold.ttf'),
-    SourceSerif4_700Bold: require('../assets/fonts/SourceSerif4_700Bold.ttf'),
+    PlusJakartaSans_400Regular: require('../assets/fonts/PlusJakartaSans_400Regular.ttf'),
+    PlusJakartaSans_500Medium: require('../assets/fonts/PlusJakartaSans_500Medium.ttf'),
+    PlusJakartaSans_600SemiBold: require('../assets/fonts/PlusJakartaSans_600SemiBold.ttf'),
+    PlusJakartaSans_700Bold: require('../assets/fonts/PlusJakartaSans_700Bold.ttf'),
   });
 
   useEffect(() => {
@@ -36,7 +35,7 @@ export default function Racine() {
   }, [loaded]);
 
   if (!loaded) {
-    return <View style={{ flex: 1, backgroundColor: couleurs.papier }} />;
+    return <View style={{ flex: 1, backgroundColor: couleurs.encre }} />;
   }
 
   const cadreWeb = Platform.OS === 'web';
@@ -45,7 +44,7 @@ export default function Racine() {
     <View
       style={{
         flex: 1,
-        backgroundColor: cadreWeb ? couleurs.papierFonce : couleurs.papier,
+        backgroundColor: cadreWeb ? '#0C0C0C' : couleurs.fond,
         alignItems: cadreWeb ? 'center' : undefined,
       }}
     >
@@ -53,23 +52,23 @@ export default function Racine() {
         style={{
           flex: 1,
           width: '100%',
-          maxWidth: cadreWeb ? 480 : undefined,
-          backgroundColor: couleurs.papier,
+          maxWidth: cadreWeb ? 390 : undefined,
+          backgroundColor: couleurs.fond,
           alignSelf: cadreWeb ? 'center' : undefined,
         }}
       >
         <StatusBar style="dark" />
         <Stack
           screenOptions={{
-            headerStyle: { backgroundColor: couleurs.papier },
+            headerStyle: { backgroundColor: couleurs.fond },
             headerShadowVisible: false,
             headerTintColor: couleurs.encre,
             headerTitleStyle: {
-              fontFamily: 'SourceSerif4_600SemiBold',
-              fontSize: 20,
+              fontFamily: typo.semi,
+              fontSize: 17,
               color: couleurs.encre,
             },
-            contentStyle: { backgroundColor: couleurs.papier },
+            contentStyle: { backgroundColor: couleurs.fond },
           }}
         >
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
