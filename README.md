@@ -6,6 +6,8 @@ Le zém n’a pas de compteur. On se met d’accord avant de monter, selon la di
 
 Ce n’est pas un prix imposé, et ce n’est pas GoZem ni Yango.
 
+Démo en ligne : [zem-tarif.onrender.com](https://zem-tarif.onrender.com)
+
 ![Écran d’estimation](docs/estimer.png)
 
 ## Fonctions
@@ -114,6 +116,8 @@ npm start
 Scanner le QR code affiché. L’application demande la position uniquement si l’on choisit d’utiliser sa position.
 
 ### Démo web statique
+
+Une version publique est en ligne : [https://zem-tarif.onrender.com](https://zem-tarif.onrender.com).
 
 ```bash
 npm run export:web
