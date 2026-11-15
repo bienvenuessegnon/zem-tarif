@@ -1,12 +1,14 @@
 # Zém Tarif
 
-Application pour estimer un prix raisonnable de course en zémidjan à Cotonou, Abomey-Calavi et Porto-Novo.
+Application pour estimer un prix raisonnable de course en zémidjan à Cotonou, Abomey-Calavi et Porto-Novo. Slogan : **Le juste prix du zém**.
 
-Le zém n’a pas de compteur. On se met d’accord avant de monter, selon la distance, l’heure et parfois la pluie. Il n’existe pas, à notre connaissance, de grille officielle ou syndicale en vigueur pour le zém de rue. Zém Tarif calcule une fourchette à partir d’un barème transparent, que les usagers peuvent ensuite corriger en indiquant le prix réellement payé.
+Le zém n’a pas de compteur. On se met d’accord avant de monter, selon la distance, l’heure et parfois la pluie. Il n’existe pas, à notre connaissance, de grille officielle ou syndicale en vigueur pour le zém de rue. Zém Tarif calcule une fourchette à partir d’un barème transparent, que les usagers peuvent ensuite corriger en indiquant le prix réellement payé. Les avis peuvent ensuite être partagés avec les autres, pour affiner les fourchettes de la communauté.
 
 Ce n’est pas un prix imposé, et ce n’est pas GoZem ni Yango.
 
-Démo en ligne : [zem-tarif.onrender.com](https://zem-tarif.onrender.com)
+- Démo en ligne : [zem-tarif.onrender.com](https://zem-tarif.onrender.com)
+- Code source : [github.com/bienvenuessegnon/zem-tarif](https://github.com/bienvenuessegnon/zem-tarif)
+- API : [zem-tarif-api.onrender.com](https://zem-tarif-api.onrender.com)
 
 ![Écran d’estimation](docs/estimer.png)
 
@@ -17,12 +19,16 @@ Démo en ligne : [zem-tarif.onrender.com](https://zem-tarif.onrender.com)
 - Itinéraire routier (OSRM). Si le calcul d’itinéraire échoue, la distance à vol d’oiseau est majorée de 25 %.
 - Fourchette en francs CFA, avec la distance et une durée indicative.
 - Majoration de nuit (22 h – 6 h, heure de Porto-Novo) et option « pluie ou voie dégradée ».
-- Signalement du prix payé, conservé sur l’appareil.
-- Historique des estimations.
+- Écran d’accueil animé (logo et slogan), puis une courte introduction au premier lancement, avec un pseudo facultatif (pas de compte, pas de téléphone ni d’e-mail).
+- Signalement du prix payé, conservé sur l’appareil et, si le réseau est disponible, envoyé à l’API. Hors ligne, l’avis est mis en file d’attente et renvoyé plus tard.
+- Historique des estimations et trajets fréquents (favoris).
+- Écran « Communauté » : médiane des prix signalés, trajet par trajet.
+- Conseils de négociation et de sécurité (dont le casque).
+- Page « Plus » pour le pseudo, les conseils, la méthode de calcul, et pour revoir l’introduction.
 - Écran « Méthode », avec les sources et les limites du modèle.
-- L’application tourne dans Expo Go (Android) et dans un navigateur.
+- L’application tourne dans Expo Go (Android), dans un navigateur, et peut être installée via un fichier APK.
 
-Un petit serveur FastAPI, facultatif, permet de rassembler les avis. Un schéma PostgreSQL prêt pour Supabase est fourni. Sans serveur, tout reste local.
+Un serveur FastAPI rassemble les avis dans une base PostgreSQL. Sans serveur, ou si le service gratuit est endormi, tout reste utilisable en local.
 
 ## Le barème
 
@@ -125,19 +131,33 @@ npm run export:web
 
 Le dossier `dist/` peut être servi par n’importe quel hébergeur de fichiers statiques (Render, Vercel, GitHub Pages, etc.). Comme la navigation est côté client, il faut renvoyer toutes les routes vers `index.html`. Le fichier `public/_redirects` le fait pour Render et Netlify ; `vercel.json` le fait pour Vercel.
 
-### Fichier APK Android
+### Fichier APK Android et publication sur le Play Store
 
-La construction d’un APK passe par [EAS Build](https://docs.expo.dev/build/setup/) et demande un compte Expo. Elle n’a pas été lancée ici.
+Le fichier `eas.json` prévoit deux profils Android :
+
+- `preview` : fichier APK, pour une installation directe (partage interne).
+- `production` : fichier AAB (`app-bundle`), exigé par le Play Store.
 
 ```bash
 npm install --global eas-cli
 eas login
-eas build --platform android --profile preview
+eas build --platform android --profile preview      # APK
+eas build --platform android --profile production   # AAB
 ```
 
-Le profil `preview` de `eas.json` produit un fichier APK, que l’on peut installer directement.
+On peut aussi construire un APK en local, après avoir installé un JDK 17 et le SDK Android, avec `npx expo prebuild --platform android` puis `cd android && ./gradlew assembleRelease`.
 
-### Serveur optionnel
+Pour publier sur le Play Store :
+
+1. Créer un compte [Google Play Console](https://play.google.com/console) (frais d’inscription uniques de 25 dollars US).
+2. Créer une fiche d’application (titre, description courte et longue, captures d’écran téléphone, icône, typologie, classification du contenu).
+3. Fournir une politique de confidentialité : l’application demande la position uniquement pour proposer un départ, et un pseudo facultatif, sans compte.
+4. Envoyer le fichier AAB produit par le profil `production`, puis suivre le parcours de test interne, de test fermé, éventuellement de test ouvert, avant la production.
+5. Renseigner la déclaration de données (position, identifiant d’appareil, avis de prix, pseudo s’il est renseigné).
+
+### Serveur et base de données
+
+L’API publique est [https://zem-tarif-api.onrender.com](https://zem-tarif-api.onrender.com). Pour un serveur local :
 
 ```bash
 cd backend
@@ -153,26 +173,41 @@ uvicorn main:app --reload --port 8000
 EXPO_PUBLIC_API_URL=http://localhost:8000
 ```
 
-Le fichier `backend/schema.sql` reprend la même structure pour Supabase.
+Une chaîne vide (`EXPO_PUBLIC_API_URL=`) désactive le réseau.
+
+Points d’entrée principaux : `GET /sante`, `POST /signalements`, `GET /stats`. Un identifiant d’appareil limite les envois (8 par heure, 20 par jour). Les prix hors de l’intervalle 50–20 000 F sont refusés. Si l’envoi échoue, l’avis reste sur l’appareil et sera renvoyé plus tard.
+
+La base de production est un PostgreSQL Render, plan gratuit, région Francfort. Selon la [documentation Render](https://render.com/docs/free.md), une base gratuite expire 30 jours après sa création, avec un délai de grâce de 14 jours pour passer à un plan payant, après quoi elle est supprimée. Elle est limitée à 1 Go, il n’y en a qu’une par espace de travail, et aucun sauvegarde n’est fournie. Les services web gratuits s’endorment après 15 minutes d’inactivité (le réveil prend environ une minute).
+
+Si cette base expire, le schéma `backend/schema.sql` peut être repris tel quel sur [Supabase](https://supabase.com/) ou [Neon](https://neon.tech/), qui proposent aussi des offres gratuites plus durables. Il suffit alors de changer `DATABASE_URL` sur le service d’API.
+
+### À quoi sert l’application
+
+Le zém se négocie à chaque course. Sans compteur, un visiteur, un nouvel arrivant ou simplement quelqu’un qui prend rarement la moto paie souvent trop cher. Zém Tarif donne une fourchette claire, fondée sur la distance réelle, l’heure et la pluie, et permet à chacun de signaler le prix réellement payé. Plus les avis s’accumulent, plus les fourchettes de la communauté deviennent utiles. Ce n’est pas un tarif imposé : c’est un point de départ pour se mettre d’accord, et un rappel de bon sens (s’entendre avant de monter, avoir de la monnaie, porter un casque).
 
 ## Captures
 
+- [docs/splash.png](docs/splash.png) — écran d’accueil, logo et slogan
+- [docs/onboarding.png](docs/onboarding.png) — introduction au premier lancement
 - [docs/estimer.png](docs/estimer.png) — écran d’estimation, carte et feuille du bas
+- [docs/communaute.png](docs/communaute.png) — prix de la communauté
+- [docs/conseils.png](docs/conseils.png) — conseils de négociation et de sécurité
+- [docs/plus.png](docs/plus.png) — profil, pseudo et réglages
 - [docs/detail.png](docs/detail.png) — détail du calcul
 - [docs/methode.png](docs/methode.png) — sources et limites
-- [docs/historique.png](docs/historique.png) — historique
+- [docs/historique.png](docs/historique.png) — trajets fréquents et historique
 - [docs/signaler.png](docs/signaler.png) — signaler un prix payé
-
-Une planche d’identité (logo, palette, écrans) figure aussi dans le dépôt de travail.
 
 ## Technique
 
 - React Native et Expo (TypeScript), Expo Router.
 - Le calcul du prix est isolé dans `src/pricing/`, sans dépendance à React, et testé avec Jest.
 - Cartes : tuiles OpenStreetMap, via Leaflet.
-- Stockage local : AsyncStorage.
+- Stockage local : AsyncStorage (historique, favoris, file d’attente, profil).
+- Animations : react-native-reanimated (feuille, compteur de prix, transitions).
 - Typographie : Plus Jakarta Sans (SIL Open Font License).
 - Fuseau horaire utilisé pour la nuit : Africa/Porto-Novo.
+- API : FastAPI et PostgreSQL (SQLite en secours, en local).
 
 Nominatim est interrogé au plus une fois par seconde, avec un identifiant de contact, conformément à [sa politique d’usage](https://operations.osmfoundation.org/policies/nominatim/). Les cartes portent la mention © les contributeurs d’OpenStreetMap.
 
