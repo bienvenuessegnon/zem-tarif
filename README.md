@@ -1,8 +1,8 @@
 # Zém Tarif
 
-Application de **prix de référence** pour une course en zémidjan à Cotonou, Abomey-Calavi et Porto-Novo, destinée aux passagers comme aux conducteurs. Slogan : **Le juste prix du zém**.
+Application de **prix de référence** pour les passagers d’une course en zémidjan à Cotonou, Abomey-Calavi et Porto-Novo. Slogan : **Le juste prix du zém**.
 
-Le zém n’a pas de compteur. On se met d’accord avant de monter, selon la distance, l’heure et parfois la pluie. Il n’existe pas, à notre connaissance, de grille officielle ou syndicale en vigueur pour le zém de rue. Zém Tarif calcule une fourchette à partir d’un barème transparent, utilisable hors ligne, que les usagers peuvent ensuite corriger en indiquant le prix réellement convenu. Les avis, pondérés selon leur cohérence, affinent la médiane de la communauté.
+Le zém n’a pas de compteur. On se met d’accord avant de monter, selon la distance, l’heure et parfois la pluie. Beaucoup de conducteurs ne lisent pas : l’application s’adresse donc au passager, qui peut montrer le prix en très grands chiffres. Il n’existe pas, à notre connaissance, de grille officielle ou syndicale en vigueur pour le zém de rue. Zém Tarif calcule une fourchette à partir d’un barème transparent, utilisable hors ligne, que les passagers peuvent ensuite corriger en indiquant le prix réellement convenu. Les avis, pondérés selon leur cohérence, affinent la médiane de la communauté.
 
 Ce n’est pas un prix imposé, et ce n’est pas GoZem ni Yango.
 
@@ -12,15 +12,15 @@ Ce n’est pas un prix imposé, et ce n’est pas GoZem ni Yango.
 
 ![Accueil « Où allez-vous ? »](docs/accueil.png)
 
-## Fonctions (version 1.1)
+## Fonctions (version 1.2)
 
 - Carte en plein écran et feuille du bas réglable (trois hauteurs), avec l’accueil « Où allez-vous ? » et l’écran de prix de référence.
 - Recherche locale de plus de 3 600 repères du Grand Nokoué (marchés, carrefours, pharmacies, lieux de culte, campus, gares, hôpitaux, quartiers), insensible aux accents, utilisable hors ligne. Les données viennent d’OpenStreetMap (ODbL). Un repère manquant peut être suggéré.
 - Mode hors ligne complet : le barème et les repères sont sur l’appareil. L’itinéraire passe par OSRM en ligne, ou à défaut par la distance à vol d’oiseau majorée d’un facteur de détour de 1,3. Un badge l’indique. Les signalements et suggestions restent en file et partent plus tard.
 - Fourchette en francs CFA, distance et durée indicative. Majoration de nuit (22 h – 6 h, heure de Porto-Novo) et option pluie.
-- Signalement en deux gestes : jetons de prix, tags nuit / pluie / bagage, rôle passager ou conducteur. Un score de fiabilité, calculé côté serveur à partir de l’historique de l’appareil, pondère les avis. Les écarts importants pèsent moins, ils ne sont pas masqués. S’il n’y a pas encore d’avis sur un trajet, l’écran le dit clairement.
+- Signalement en deux gestes : jetons de prix, tags nuit / pluie / bagage. Un score de fiabilité, calculé côté serveur à partir de l’historique de l’appareil, pondère les avis. Les écarts importants pèsent moins, ils ne sont pas masqués. S’il n’y a pas encore d’avis sur un trajet, l’écran le dit clairement.
+- « Montrer au zém » : plein écran très contrasté, grands chiffres et fourchette, écran qui reste allumé, peu de texte, pour le montrer au conducteur.
 - Carte de prix partageable (image et lien). Le lien rouvre la démo sur le même trajet. Sur le web : téléchargement de l’image ou API Web Share ; sur Android : feuille de partage (WhatsApp, statut, copie du lien).
-- Espace zémidjan (choix du rôle dans le profil) : prix de la course en cours, plein écran contrasté à montrer au client (l’écran reste allumé), recettes du jour conservées sur l’appareil, repère essence à 725 F/L, zones demandées si la communauté en signale assez (sinon un état vide honnête).
 - Écran d’accueil animé, courte introduction, pseudo facultatif (pas de compte).
 - Historique, favoris, communauté, conseils, méthode et sources.
 - L’application tourne dans Expo Go (Android), dans un navigateur, et via un fichier APK.
@@ -144,7 +144,8 @@ eas build --platform android --profile production   # AAB
 
 Les APK, pour installation directe, sont sur la page des versions :
 
-- [zem-tarif-1.1.1.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.1.1/zem-tarif-1.1.1.apk) (version courante, [v1.1.1](https://github.com/bienvenuessegnon/zem-tarif/releases/tag/v1.1.1))
+- [zem-tarif-1.2.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.2.0/zem-tarif-1.2.0.apk) (version courante, [v1.2.0](https://github.com/bienvenuessegnon/zem-tarif/releases/tag/v1.2.0))
+- [zem-tarif-1.1.1.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.1.1/zem-tarif-1.1.1.apk)
 - [zem-tarif-1.1.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.1.0/zem-tarif-1.1.0.apk)
 - [zem-tarif-1.0.1.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.0.1/zem-tarif-1.0.1.apk)
 - [zem-tarif-1.0.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.0.0/zem-tarif-1.0.0.apk)
@@ -189,7 +190,7 @@ Si cette base expire, le schéma `backend/schema.sql` peut être repris tel quel
 
 ### À quoi sert l’application
 
-Le zém se négocie à chaque course. Zém Tarif donne un prix de référence, fondé sur la distance, l’heure et la pluie, aussi bien au passager qu’au conducteur. Chacun peut signaler le prix réellement convenu. Plus les avis cohérents s’accumulent, plus la médiane de la communauté devient utile. Ce n’est pas un tarif imposé : c’est un point de départ pour se mettre d’accord, et un rappel de bon sens (s’entendre avant de monter, avoir de la monnaie, porter un casque).
+Le zém se négocie à chaque course. Zém Tarif s’adresse au passager : il donne un prix de référence, fondé sur la distance, l’heure et la pluie, et permet de le montrer en grand au conducteur, même s’il ne lit pas. Après la course, le passager peut signaler le prix réellement convenu. Plus les avis cohérents s’accumulent, plus la médiane de la communauté devient utile. Ce n’est pas un tarif imposé : c’est un point de départ pour se mettre d’accord, et un rappel de bon sens (s’entendre avant de monter, avoir de la monnaie, porter un casque).
 
 ## Captures
 
@@ -198,13 +199,12 @@ Le zém se négocie à chaque course. Zém Tarif donne un prix de référence, f
 - [docs/reference.png](docs/reference.png) — prix de référence
 - [docs/partage.png](docs/partage.png) — carte de prix à partager
 - [docs/signaler.png](docs/signaler.png) — signaler un prix en deux gestes
-- [docs/espace-zem.png](docs/espace-zem.png) — espace zémidjan
-- [docs/montrer.png](docs/montrer.png) — plein écran à montrer au client
+- [docs/montrer.png](docs/montrer.png) — plein écran « Montrer au zém »
 - [docs/splash.png](docs/splash.png) — écran d’accueil, logo et slogan
 - [docs/onboarding.png](docs/onboarding.png) — introduction au premier lancement
 - [docs/communaute.png](docs/communaute.png) — prix de la communauté
 - [docs/conseils.png](docs/conseils.png) — conseils de négociation et de sécurité
-- [docs/plus.png](docs/plus.png) — profil et choix du rôle
+- [docs/plus.png](docs/plus.png) — profil
 
 ## Technique
 
