@@ -27,6 +27,7 @@ export default function Onglets() {
         tabBarActiveTintColor: couleurs.encre,
         tabBarInactiveTintColor: couleurs.muet,
         tabBarLabelStyle: styles.label,
+        tabBarItemStyle: styles.item,
         sceneStyle: { backgroundColor: couleurs.fond },
       }}
       screenListeners={{
@@ -57,15 +58,8 @@ export default function Onglets() {
         options={{
           title: 'Historique',
           tabBarLabel: 'Trajets',
+          href: conducteur ? null : undefined,
           tabBarIcon: ({ color }) => <IconeOnglet nom="clock" couleur={String(color ?? '#8A8A86')} />,
-        }}
-      />
-      <Tabs.Screen
-        name="plus"
-        options={{
-          title: 'Profil',
-          tabBarLabel: 'Profil',
-          tabBarIcon: ({ color }) => <IconeOnglet nom="menu" couleur={String(color ?? '#8A8A86')} />,
         }}
       />
       <Tabs.Screen
@@ -76,6 +70,14 @@ export default function Onglets() {
           headerShown: false,
           href: conducteur ? undefined : null,
           tabBarIcon: ({ color }) => <IconeOnglet nom="truck" couleur={String(color ?? '#8A8A86')} />,
+        }}
+      />
+      <Tabs.Screen
+        name="plus"
+        options={{
+          title: 'Profil',
+          tabBarLabel: 'Profil',
+          tabBarIcon: ({ color }) => <IconeOnglet nom="menu" couleur={String(color ?? '#8A8A86')} />,
         }}
       />
       <Tabs.Screen
@@ -90,7 +92,7 @@ export default function Onglets() {
 }
 
 function IconeOnglet({ nom, couleur }: { nom: NomIcone; couleur: string }) {
-  return <Icone nom={nom} taille={20} couleur={typeof couleur === 'string' ? couleur : couleurs.muet} />;
+  return <Icone nom={nom} taille={18} couleur={typeof couleur === 'string' ? couleur : couleurs.muet} />;
 }
 
 const styles = StyleSheet.create({
@@ -101,9 +103,13 @@ const styles = StyleSheet.create({
     height: 64,
     paddingTop: 6,
   },
+  item: {
+    flex: 1,
+    paddingHorizontal: 0,
+  },
   label: {
     fontFamily: typo.medium,
-    fontSize: 11,
-    letterSpacing: 0.2,
+    fontSize: 10,
+    letterSpacing: 0,
   },
 });
