@@ -144,7 +144,8 @@ eas build --platform android --profile production   # AAB
 
 Les APK, pour installation directe, sont sur la page des versions :
 
-- [zem-tarif-1.1.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.1.0/zem-tarif-1.1.0.apk) (version courante, [v1.1.0](https://github.com/bienvenuessegnon/zem-tarif/releases/tag/v1.1.0))
+- [zem-tarif-1.1.1.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.1.1/zem-tarif-1.1.1.apk) (version courante, [v1.1.1](https://github.com/bienvenuessegnon/zem-tarif/releases/tag/v1.1.1))
+- [zem-tarif-1.1.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.1.0/zem-tarif-1.1.0.apk)
 - [zem-tarif-1.0.1.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.0.1/zem-tarif-1.0.1.apk)
 - [zem-tarif-1.0.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.0.0/zem-tarif-1.0.0.apk)
 
