@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 import { Icone } from '@/components/Icone';
+import { lireFavoris, type Favori } from '@/src/storage/favoris';
 import { formatDuree, formatFcfa, formatKm } from '@/src/pricing/format';
 import {
   lireHistorique,
@@ -18,14 +19,16 @@ import { ombreLegere, rayon } from '@/src/theme/espace';
 export default function EcranHistorique() {
   const [historique, setHistorique] = useState<EntreeHistorique[]>([]);
   const [avis, setAvis] = useState<Signalement[]>([]);
+  const [favoris, setFavoris] = useState<Favori[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       let actif = true;
-      Promise.all([lireHistorique(), lireSignalements()]).then(([h, s]) => {
+      Promise.all([lireHistorique(), lireSignalements(), lireFavoris()]).then(([h, s, f]) => {
         if (!actif) return;
         setHistorique(h);
         setAvis(s.filter((x) => x.source === 'utilisateur'));
+        setFavoris(f);
       });
       return () => {
         actif = false;
@@ -45,7 +48,24 @@ export default function EcranHistorique() {
         n’est publié tant qu’aucun serveur n’est configuré.
       </Text>
 
-      <Text style={styles.titre}>Prix signalés</Text>
+      <Text style={styles.titre}>Trajets fréquents</Text>
+      {favoris.length === 0 ? (
+        <EtatVide
+          icone="star"
+          texte="Aucun trajet favori pour le moment. Sur l’écran Estimer, ajoutez une étoile à un trajet habituel."
+        />
+      ) : (
+        favoris.map((f) => (
+          <View key={f.id} style={[styles.carte, ombreLegere]}>
+            <Text style={styles.trajet}>
+              {f.origin.label} → {f.dest.label}
+            </Text>
+            <Text style={styles.meta}>Favori enregistré sur cet appareil</Text>
+          </View>
+        ))
+      )}
+
+      <Text style={[styles.titre, styles.titreSuite]}>Prix signalés</Text>
       {avis.length === 0 ? (
         <EtatVide
           icone="tag"
@@ -103,7 +123,7 @@ export default function EcranHistorique() {
   );
 }
 
-function EtatVide({ icone, texte }: { icone: 'tag' | 'clock'; texte: string }) {
+function EtatVide({ icone, texte }: { icone: 'tag' | 'clock' | 'star'; texte: string }) {
   return (
     <View style={styles.videBloc}>
       <View style={styles.videIcone}>

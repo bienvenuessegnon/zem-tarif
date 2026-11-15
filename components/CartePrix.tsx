@@ -1,4 +1,5 @@
 import type { ComponentProps } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Icone } from '@/components/Icone';
@@ -19,7 +20,7 @@ export function CartePrix({ estimation, dureeS, sourceDistance }: Props) {
     <View style={styles.carte}>
       <Text style={styles.legende}>Fourchette raisonnable</Text>
       <Text style={styles.point} accessibilityRole="header">
-        {formatFcfa(estimation.point)}
+        <PrixAnime valeur={estimation.point} />
       </Text>
       <Text style={styles.unite}>CFA</Text>
       <Text style={styles.fourchette}>
@@ -53,6 +54,25 @@ function Puce({ icone, texte }: { icone: ComponentProps<typeof Icone>['nom']; te
       <Text style={styles.puceTexte}>{texte}</Text>
     </View>
   );
+}
+
+function PrixAnime({ valeur }: { valeur: number }) {
+  const [affiche, setAffiche] = useState(0);
+  useEffect(() => {
+    let cadre = 0;
+    let debut: number | null = null;
+    const duree = 520;
+    const pas = (t: number) => {
+      if (debut == null) debut = t;
+      const p = Math.min(1, (t - debut) / duree);
+      const eased = 1 - (1 - p) * (1 - p);
+      setAffiche(Math.round((valeur * eased) / 50) * 50);
+      if (p < 1) cadre = requestAnimationFrame(pas);
+    };
+    cadre = requestAnimationFrame(pas);
+    return () => cancelAnimationFrame(cadre);
+  }, [valeur]);
+  return <>{formatFcfa(affiche || valeur)}</>;
 }
 
 const styles = StyleSheet.create({

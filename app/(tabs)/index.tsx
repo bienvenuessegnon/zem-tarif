@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import {
   Image,
   Pressable,
@@ -31,6 +32,7 @@ import { heurePortoNovo } from '@/src/pricing/horaire';
 import { estimer } from '@/src/pricing/melange';
 import type { Estimation, Signalement } from '@/src/pricing/types';
 import { ajouterHistorique } from '@/src/storage/historique';
+import { basculerFavori, lireFavoris, type Favori } from '@/src/storage/favoris';
 import { lireSignalements } from '@/src/storage/signalements';
 import { couleurs } from '@/src/theme/colors';
 import { ombreCarte, ombreLegere, rayon } from '@/src/theme/espace';
@@ -52,13 +54,16 @@ export default function EcranEstimer() {
   const [detailOuvert, setDetailOuvert] = useState(false);
   const [erreurGps, setErreurGps] = useState<string | null>(null);
   const [enregistre, setEnregistre] = useState(false);
+  const [favoris, setFavoris] = useState<Favori[]>([]);
+  const [estFavoriActif, setEstFavoriActif] = useState(false);
 
   useEffect(() => {
     let actif = true;
-    Promise.all([lireSignalements(), telechargerSignalements()]).then(([locaux, distants]) => {
+    Promise.all([lireSignalements(), telechargerSignalements(), lireFavoris()]).then(([locaux, distants, fav]) => {
       if (!actif) return;
       const vus = new Set(locaux.map((s) => s.id));
       setAvis([...locaux, ...distants.filter((s) => !vus.has(s.id))]);
+      setFavoris(fav);
     });
     return () => {
       actif = false;
@@ -110,7 +115,18 @@ export default function EcranEstimer() {
     void toucherLeger();
   }, [depart, arrivee, itineraire, heure, pluie, avis]);
 
+  useEffect(() => {
+    if (!depart || !arrivee) {
+      setEstFavoriActif(false);
+      return;
+    }
+    setEstFavoriActif(
+      favoris.some((f) => f.origin.label === depart.label && f.dest.label === arrivee.label),
+    );
+  }, [depart, arrivee, favoris]);
+
   const horsZone =
+
     (depart && !dansLaZone(depart.lat, depart.lon)) ||
     (arrivee && !dansLaZone(arrivee.lat, arrivee.lon));
   const longTrajet = (itineraire?.distanceM ?? 0) > 20_000;
@@ -202,7 +218,7 @@ export default function EcranEstimer() {
         </Pressable>
       </View>
 
-      <View style={[styles.feuille, ombreCarte, { paddingBottom: 12 }]}>
+      <Animated.View entering={FadeInDown.duration(420).springify().damping(18)} style={[styles.feuille, ombreCarte, { paddingBottom: 12 }]}>
         <View style={styles.poignee} />
         <ScrollView
           keyboardShouldPersistTaps="handled"
@@ -266,6 +282,29 @@ export default function EcranEstimer() {
             </View>
           ) : null}
 
+          {favoris.length > 0 ? (
+            <View style={{ marginTop: 8, marginBottom: 4 }}>
+              {favoris.slice(0, 6).map((f) => (
+                <Pressable
+                  key={f.id}
+                  onPress={() => {
+                    setDepart(f.origin);
+                    setSaisieDepart(f.origin.label);
+                    setArrivee(f.dest);
+                    setSaisieArrivee(f.dest.label);
+                    void toucherLeger();
+                  }}
+                  style={({ pressed }) => [styles.favJeton, pressed && { opacity: 0.8 }]}
+                >
+                  <Icone nom="star" taille={12} couleur={couleurs.orFonce} />
+                  <Text style={styles.favJetonTexte} numberOfLines={1}>
+                    {f.origin.label} → {f.dest.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          ) : null}
+
           <Conditions
             heure={heure}
             maintenant={maintenant}
@@ -304,6 +343,18 @@ export default function EcranEstimer() {
               </Pressable>
               {detailOuvert ? <DetailTarif estimation={estimation} /> : null}
               <View style={styles.boutons}>
+                <Pressable
+                  onPress={async () => {
+                    if (!depart || !arrivee) return;
+                    const liste = await basculerFavori(depart, arrivee);
+                    setFavoris(liste);
+                    void toucherLeger();
+                  }}
+                  style={[styles.etoile, estFavoriActif && styles.etoileActive]}
+                  accessibilityLabel={estFavoriActif ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                >
+                  <Icone nom="star" taille={20} couleur={estFavoriActif ? couleurs.orFonce : couleurs.encre} />
+                </Pressable>
                 <Bouton
                   titre={enregistre ? 'Enregistrée' : 'Garder'}
                   variante="contour"
@@ -328,7 +379,7 @@ export default function EcranEstimer() {
             </View>
           ) : null}
         </ScrollView>
-      </View>
+      </Animated.View>
     </View>
   );
 }
@@ -411,6 +462,31 @@ const styles = StyleSheet.create({
     color: couleurs.orFonce,
   },
   boutons: { flexDirection: 'row', gap: 10, marginTop: 16, alignItems: 'stretch' },
+  etoile: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: couleurs.encre,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: couleurs.surface,
+  },
+  etoileActive: { backgroundColor: couleurs.orPale, borderColor: couleurs.or },
+  favJeton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: couleurs.or,
+    backgroundColor: couleurs.orPale,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    marginBottom: 6,
+  },
+  favJetonTexte: { fontFamily: typo.medium, fontSize: 13, color: couleurs.encre, maxWidth: 280 },
   vide: { alignItems: 'center', paddingVertical: 20, gap: 10 },
   videIcone: {
     width: 44,

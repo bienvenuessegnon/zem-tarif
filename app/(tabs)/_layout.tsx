@@ -38,23 +38,38 @@ export default function Onglets() {
           title: 'Zém Tarif',
           tabBarLabel: 'Estimer',
           headerShown: false,
-          tabBarIcon: ({ color }) => <IconeOnglet nom="map-pin" couleur={String(color ?? "#8A8A86")} />,
+          tabBarIcon: ({ color }) => <IconeOnglet nom="map-pin" couleur={String(color ?? '#8A8A86')} />,
+        }}
+      />
+      <Tabs.Screen
+        name="communaute"
+        options={{
+          title: 'Communauté',
+          tabBarLabel: 'Communauté',
+          tabBarIcon: ({ color }) => <IconeOnglet nom="users" couleur={String(color ?? '#8A8A86')} />,
         }}
       />
       <Tabs.Screen
         name="historique"
         options={{
           title: 'Historique',
-          tabBarLabel: 'Historique',
-          tabBarIcon: ({ color }) => <IconeOnglet nom="clock" couleur={String(color ?? "#8A8A86")} />,
+          tabBarLabel: 'Trajets',
+          tabBarIcon: ({ color }) => <IconeOnglet nom="clock" couleur={String(color ?? '#8A8A86')} />,
+        }}
+      />
+      <Tabs.Screen
+        name="plus"
+        options={{
+          title: 'Plus',
+          tabBarLabel: 'Plus',
+          tabBarIcon: ({ color }) => <IconeOnglet nom="menu" couleur={String(color ?? '#8A8A86')} />,
         }}
       />
       <Tabs.Screen
         name="a-propos"
         options={{
           title: 'La méthode',
-          tabBarLabel: 'Méthode',
-          tabBarIcon: ({ color }) => <IconeOnglet nom="info" couleur={String(color ?? "#8A8A86")} />,
+          href: null,
         }}
       />
     </Tabs>

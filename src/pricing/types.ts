@@ -34,6 +34,9 @@ export type Signalement = {
   enregistreLe: string;
   /** Les exemples de calibration ne sont pas des signalements d'usagers. */
   source: 'utilisateur' | 'exemple';
+  heure?: number | null;
+  pseudo?: string | null;
+  appareilId?: string | null;
 };
 
 export type DemandeEstimation = {

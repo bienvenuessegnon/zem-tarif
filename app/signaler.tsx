@@ -9,6 +9,8 @@ import { lireBrouillon } from '@/src/contenu/brouillon';
 import { toucherSucces } from '@/src/contenu/haptique';
 import { nouvelId } from '@/src/contenu/identifiants';
 import { formatFcfa, formatKm } from '@/src/pricing/format';
+import { lireProfil } from '@/src/storage/profil';
+import { idAppareil } from '@/src/storage/appareil';
 import { estNuit } from '@/src/pricing/horaire';
 import type { Signalement } from '@/src/pricing/types';
 import { ajouterHistorique } from '@/src/storage/historique';
@@ -46,6 +48,7 @@ export default function EcranSignaler() {
   async function enregistrer() {
     if (!valide || !brouillon) return;
     setEnvoi(true);
+    const [profil, appareilId] = await Promise.all([lireProfil(), idAppareil()]);
     const avis: Signalement = {
       id: nouvelId(),
       originLat: brouillon.origin.lat,
@@ -58,6 +61,9 @@ export default function EcranSignaler() {
       prixPayeFcfa: Math.round(valeur),
       nuit: estNuit(brouillon.heure),
       pluie: brouillon.pluie,
+      heure: brouillon.heure,
+      pseudo: profil.pseudo || null,
+      appareilId,
       enregistreLe: new Date().toISOString(),
       source: 'utilisateur',
     };
