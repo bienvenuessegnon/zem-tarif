@@ -102,7 +102,7 @@ export default function EcranAPropos() {
         passagers, les bagages, et le fait qu’un visiteur se voit souvent
         proposer plus cher. La durée vient d’OSRM, souvent optimiste aux
         heures de pointe. Si le calcul d’itinéraire échoue, la distance est
-        celle à vol d’oiseau, majorée de 25 %.
+        celle à vol d’oiseau, majorée de 30 %.
       </Text>
       <Text style={styles.p}>
         Zém Tarif n’est pas GoZem ni Yango. GoZem Zem, tel qu’observé dans

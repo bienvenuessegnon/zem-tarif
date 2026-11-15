@@ -16,3 +16,22 @@ export function Icone({ nom, taille = 20, couleur = couleurs.encre }: Props) {
 }
 
 export type NomIcone = Nom;
+
+const SECOURS: NomIcone = 'map-pin';
+
+const CONNUES = new Set<string>([
+  'shopping-bag',
+  'git-merge',
+  'plus',
+  'home',
+  'book-open',
+  'truck',
+  'plus-square',
+  'map-pin',
+  'send',
+]);
+
+export function iconeConnue(nom: string | undefined): NomIcone {
+  if (nom && CONNUES.has(nom)) return nom as NomIcone;
+  return SECOURS;
+}

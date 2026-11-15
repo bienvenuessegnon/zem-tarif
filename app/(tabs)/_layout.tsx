@@ -6,8 +6,11 @@ import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { toucherLeger } from '@/src/contenu/haptique';
 import { couleurs } from '@/src/theme/colors';
 import { typo } from '@/src/theme/typo';
+import { useProfil } from '@/src/contenu/contexte-profil';
 
 export default function Onglets() {
+  const { profil } = useProfil();
+  const conducteur = profil.role === 'conducteur';
   return (
     <Tabs
       screenOptions={{
@@ -36,7 +39,7 @@ export default function Onglets() {
         name="index"
         options={{
           title: 'Zém Tarif',
-          tabBarLabel: 'Estimer',
+          tabBarLabel: 'Accueil',
           headerShown: false,
           tabBarIcon: ({ color }) => <IconeOnglet nom="map-pin" couleur={String(color ?? '#8A8A86')} />,
         }}
@@ -60,9 +63,19 @@ export default function Onglets() {
       <Tabs.Screen
         name="plus"
         options={{
-          title: 'Plus',
-          tabBarLabel: 'Plus',
+          title: 'Profil',
+          tabBarLabel: 'Profil',
           tabBarIcon: ({ color }) => <IconeOnglet nom="menu" couleur={String(color ?? '#8A8A86')} />,
+        }}
+      />
+      <Tabs.Screen
+        name="espace-zem"
+        options={{
+          title: 'Espace zémidjan',
+          tabBarLabel: 'Course',
+          headerShown: false,
+          href: conducteur ? undefined : null,
+          tabBarIcon: ({ color }) => <IconeOnglet nom="truck" couleur={String(color ?? '#8A8A86')} />,
         }}
       />
       <Tabs.Screen

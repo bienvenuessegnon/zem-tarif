@@ -35,7 +35,7 @@ export default function Racine() {
     PlusJakartaSans_700Bold: require('../assets/fonts/PlusJakartaSans_700Bold.ttf'),
   });
   const [phase, setPhase] = useState<Phase>('chargement');
-  const [profil, setProfil] = useState<Profil>({ pseudo: '', onboardingVu: false });
+  const [profil, setProfil] = useState<Profil>({ pseudo: '', onboardingVu: false, role: 'passager' });
 
   useEffect(() => {
     if (error) throw error;
@@ -125,6 +125,13 @@ export default function Racine() {
             <Stack.Screen
               name="signaler"
               options={{ title: 'Signaler un prix', presentation: 'modal' }}
+            />
+            <Stack.Screen name="recherche" options={{ title: 'Rechercher', headerShown: false }} />
+            <Stack.Screen name="partage" options={{ title: 'Partager le prix', presentation: 'modal' }} />
+            <Stack.Screen name="trajet" options={{ headerShown: false }} />
+            <Stack.Screen
+              name="montrer"
+              options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'fade' }}
             />
             <Stack.Screen name="conseils" options={{ title: 'Conseils' }} />
           </Stack>
