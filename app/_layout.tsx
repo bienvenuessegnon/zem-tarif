@@ -1,3 +1,4 @@
+import 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { useFonts } from 'expo-font';
@@ -6,6 +7,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { Platform, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { EcranSplash } from '@/components/EcranSplash';
 import { Onboarding } from '@/components/Onboarding';
@@ -61,12 +63,16 @@ export default function Racine() {
   }, [loaded]);
 
   if (!loaded || phase === 'chargement' || phase === 'splash') {
-    return <EcranSplash />;
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <EcranSplash />
+      </GestureHandlerRootView>
+    );
   }
 
   if (phase === 'onboarding') {
     return (
-      <View style={{ flex: 1, backgroundColor: couleurs.fond }}>
+      <GestureHandlerRootView style={{ flex: 1, backgroundColor: couleurs.fond }}>
         <StatusBar style="dark" />
         <Onboarding
           onTerminer={async (pseudo) => {
@@ -75,13 +81,14 @@ export default function Racine() {
             setPhase('app');
           }}
         />
-      </View>
+      </GestureHandlerRootView>
     );
   }
 
   const cadreWeb = Platform.OS === 'web';
 
   return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
     <FournisseurProfil profilInitial={profil}>
       <View
         style={{
@@ -124,5 +131,6 @@ export default function Racine() {
         </View>
       </View>
     </FournisseurProfil>
+    </GestureHandlerRootView>
   );
 }

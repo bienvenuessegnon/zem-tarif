@@ -2,7 +2,7 @@
   "expo": {
     "name": "Zém Tarif",
     "slug": "zem-tarif",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "zemtarif",
@@ -31,7 +31,8 @@
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
-      ]
+      ],
+      "versionCode": 2
     },
     "web": {
       "bundler": "metro",

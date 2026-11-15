@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useEffect, useRef, useState } from 'react';
 import {
   Image,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -13,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 
 import { Bouton } from '@/components/Bouton';
+import { FeuilleBas, type CommandeFeuille } from '@/components/FeuilleBas';
 import { CarteItineraire } from '@/components/CarteItineraire';
 import { CartePrix } from '@/components/CartePrix';
 import { ChampLieu } from '@/components/ChampLieu';
@@ -30,12 +29,13 @@ import { calculerItineraire, type Itineraire } from '@/src/geo/osrm';
 import { dansLaZone } from '@/src/geo/zone';
 import { heurePortoNovo } from '@/src/pricing/horaire';
 import { estimer } from '@/src/pricing/melange';
+import { formatFcfa } from '@/src/pricing/format';
 import type { Estimation, Signalement } from '@/src/pricing/types';
 import { ajouterHistorique } from '@/src/storage/historique';
 import { basculerFavori, lireFavoris, type Favori } from '@/src/storage/favoris';
 import { lireSignalements } from '@/src/storage/signalements';
 import { couleurs } from '@/src/theme/colors';
-import { ombreCarte, ombreLegere, rayon } from '@/src/theme/espace';
+import { ombreLegere, rayon } from '@/src/theme/espace';
 import { typo } from '@/src/theme/typo';
 
 export default function EcranEstimer() {
@@ -56,6 +56,8 @@ export default function EcranEstimer() {
   const [enregistre, setEnregistre] = useState(false);
   const [favoris, setFavoris] = useState<Favori[]>([]);
   const [estFavoriActif, setEstFavoriActif] = useState(false);
+  const [paddingBas, setPaddingBas] = useState(200);
+  const feuilleRef = useRef<CommandeFeuille>(null);
 
   useEffect(() => {
     let actif = true;
@@ -125,7 +127,17 @@ export default function EcranEstimer() {
     );
   }, [depart, arrivee, favoris]);
 
+  const aUnResultat = Boolean(estimation && itineraire && !chargementIti);
+  const avaitResultat = useRef(false);
+  useEffect(() => {
+    if (aUnResultat && !avaitResultat.current) {
+      feuilleRef.current?.allerAAuMoins(1);
+    }
+    avaitResultat.current = aUnResultat;
+  }, [aUnResultat]);
+
   const horsZone =
+
 
     (depart && !dansLaZone(depart.lat, depart.lon)) ||
     (arrivee && !dansLaZone(arrivee.lat, arrivee.lon));
@@ -197,7 +209,7 @@ export default function EcranEstimer() {
         origin={depart ?? undefined}
         dest={arrivee ?? undefined}
         geometrie={itineraire?.geometrie}
-        paddingBas={500}
+        paddingBas={paddingBas}
       />
 
       <View style={[styles.haut, { top: Math.max(insets.top, 12) + 4 }]}>
@@ -218,13 +230,29 @@ export default function EcranEstimer() {
         </Pressable>
       </View>
 
-      <Animated.View entering={FadeInDown.duration(420).springify().damping(18)} style={[styles.feuille, ombreCarte, { paddingBottom: 12 }]}>
-        <View style={styles.poignee} />
-        <ScrollView
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.feuilleContenu}
-        >
+      <FeuilleBas
+        ref={feuilleRef}
+        onHauteurStabilisee={setPaddingBas}
+        entete={
+          estimation && depart && arrivee ? (
+            <View>
+              <Text style={styles.resumeTrajet} numberOfLines={1}>
+                {depart.label} → {arrivee.label}
+              </Text>
+              <Text style={styles.resumePrix}>{formatFcfa(estimation.point)}</Text>
+            </View>
+          ) : (
+            <View>
+              <Text style={styles.resumeLigne} numberOfLines={1}>
+                Départ · {depart?.label ?? 'À préciser'}
+              </Text>
+              <Text style={styles.resumeLigne} numberOfLines={1}>
+                Arrivée · {arrivee?.label ?? 'À préciser'}
+              </Text>
+            </View>
+          )
+        }
+      >
           <ChampLieu
             etiquette="Départ"
             icone="circle"
@@ -242,6 +270,7 @@ export default function EcranEstimer() {
               setDepart(null);
               setSaisieDepart('');
             }}
+            onFocusChamp={() => feuilleRef.current?.allerA(2)}
           />
           <View style={styles.separateur} />
           <ChampLieu
@@ -261,6 +290,7 @@ export default function EcranEstimer() {
               setArrivee(null);
               setSaisieArrivee('');
             }}
+            onFocusChamp={() => feuilleRef.current?.allerA(2)}
           />
 
           {erreurGps ? <Text style={styles.alerte}>{erreurGps}</Text> : null}
@@ -378,8 +408,7 @@ export default function EcranEstimer() {
               </Text>
             </View>
           ) : null}
-        </ScrollView>
-      </Animated.View>
+      </FeuilleBas>
     </View>
   );
 }
@@ -390,7 +419,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    zIndex: 2,
+    zIndex: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -415,27 +444,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  feuille: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 2,
-    maxHeight: '62%',
-    backgroundColor: couleurs.surface,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-  },
-  poignee: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: couleurs.ligne,
-    marginTop: 10,
-    marginBottom: 6,
-  },
-  feuilleContenu: { paddingHorizontal: 20, paddingBottom: 20 },
   separateur: {
     height: 1,
     backgroundColor: couleurs.ligne,
@@ -487,6 +495,23 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   favJetonTexte: { fontFamily: typo.medium, fontSize: 13, color: couleurs.encre, maxWidth: 280 },
+  resumeTrajet: {
+    fontFamily: typo.medium,
+    fontSize: 14,
+    color: couleurs.encreDouce,
+  },
+  resumePrix: {
+    fontFamily: typo.bold,
+    fontSize: 28,
+    color: couleurs.encre,
+    marginTop: 2,
+  },
+  resumeLigne: {
+    fontFamily: typo.medium,
+    fontSize: 16,
+    color: couleurs.encre,
+    marginBottom: 4,
+  },
   vide: { alignItems: 'center', paddingVertical: 20, gap: 10 },
   videIcone: {
     width: 44,

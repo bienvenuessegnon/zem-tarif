@@ -23,6 +23,7 @@ type Props = {
   onSaisie: (texte: string) => void;
   onChoix: (lieu: Lieu) => void;
   onEffacer: () => void;
+  onFocusChamp?: () => void;
 };
 
 export function ChampLieu({
@@ -33,6 +34,7 @@ export function ChampLieu({
   onSaisie,
   onChoix,
   onEffacer,
+  onFocusChamp,
 }: Props) {
   const [ouvert, setOuvert] = useState(false);
   const [reseau, setReseau] = useState<Lieu[]>([]);
@@ -100,7 +102,10 @@ export function ChampLieu({
               onSaisie(t);
               setOuvert(true);
             }}
-            onFocus={() => setOuvert(true)}
+            onFocus={() => {
+              setOuvert(true);
+              onFocusChamp?.();
+            }}
             placeholder="Quartier, marché, carrefour…"
             placeholderTextColor={couleurs.muet}
             style={styles.champ}
