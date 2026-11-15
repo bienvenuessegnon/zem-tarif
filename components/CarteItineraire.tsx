@@ -49,7 +49,7 @@ function htmlCarte(
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     const data = ${payload};
-    const carte = L.map('carte', { zoomControl: true, attributionControl: true });
+    const carte = L.map('carte', { zoomControl: false, attributionControl: true });
     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
