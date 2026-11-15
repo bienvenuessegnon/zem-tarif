@@ -198,6 +198,7 @@ Le zém se négocie à chaque course. Zém Tarif donne un prix de référence, f
 - [docs/partage.png](docs/partage.png) — carte de prix à partager
 - [docs/signaler.png](docs/signaler.png) — signaler un prix en deux gestes
 - [docs/espace-zem.png](docs/espace-zem.png) — espace zémidjan
+- [docs/montrer.png](docs/montrer.png) — plein écran à montrer au client
 - [docs/splash.png](docs/splash.png) — écran d’accueil, logo et slogan
 - [docs/onboarding.png](docs/onboarding.png) — introduction au premier lancement
 - [docs/communaute.png](docs/communaute.png) — prix de la communauté
