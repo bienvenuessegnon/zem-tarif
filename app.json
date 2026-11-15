@@ -2,7 +2,7 @@
   "expo": {
     "name": "Zém Tarif",
     "slug": "zem-tarif",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "zemtarif",
@@ -32,7 +32,7 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
       ],
-      "versionCode": 2
+      "versionCode": 3
     },
     "web": {
       "bundler": "metro",
@@ -55,7 +55,8 @@
         {
           "locationWhenInUsePermission": "Zém Tarif utilise votre position uniquement pour proposer un point de départ."
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true

@@ -1,8 +1,8 @@
 # Zém Tarif
 
-Application pour estimer un prix raisonnable de course en zémidjan à Cotonou, Abomey-Calavi et Porto-Novo. Slogan : **Le juste prix du zém**.
+Application de **prix de référence** pour une course en zémidjan à Cotonou, Abomey-Calavi et Porto-Novo, destinée aux passagers comme aux conducteurs. Slogan : **Le juste prix du zém**.
 
-Le zém n’a pas de compteur. On se met d’accord avant de monter, selon la distance, l’heure et parfois la pluie. Il n’existe pas, à notre connaissance, de grille officielle ou syndicale en vigueur pour le zém de rue. Zém Tarif calcule une fourchette à partir d’un barème transparent, que les usagers peuvent ensuite corriger en indiquant le prix réellement payé. Les avis peuvent ensuite être partagés avec les autres, pour affiner les fourchettes de la communauté.
+Le zém n’a pas de compteur. On se met d’accord avant de monter, selon la distance, l’heure et parfois la pluie. Il n’existe pas, à notre connaissance, de grille officielle ou syndicale en vigueur pour le zém de rue. Zém Tarif calcule une fourchette à partir d’un barème transparent, utilisable hors ligne, que les usagers peuvent ensuite corriger en indiquant le prix réellement convenu. Les avis, pondérés selon leur cohérence, affinent la médiane de la communauté.
 
 Ce n’est pas un prix imposé, et ce n’est pas GoZem ni Yango.
 
@@ -10,23 +10,20 @@ Ce n’est pas un prix imposé, et ce n’est pas GoZem ni Yango.
 - Code source : [github.com/bienvenuessegnon/zem-tarif](https://github.com/bienvenuessegnon/zem-tarif)
 - API : [zem-tarif-api.onrender.com](https://zem-tarif-api.onrender.com)
 
-![Écran d’estimation](docs/estimer.png)
+![Accueil « Où allez-vous ? »](docs/accueil.png)
 
-## Fonctions
+## Fonctions (version 1.1)
 
-- Carte en plein écran, avec une feuille du bas pour le départ, l’arrivée et le résultat.
-- Recherche d’un départ et d’une arrivée (repères habituels, ou OpenStreetMap via Nominatim).
-- Itinéraire routier (OSRM). Si le calcul d’itinéraire échoue, la distance à vol d’oiseau est majorée de 25 %.
-- Fourchette en francs CFA, avec la distance et une durée indicative.
-- Majoration de nuit (22 h – 6 h, heure de Porto-Novo) et option « pluie ou voie dégradée ».
-- Écran d’accueil animé (logo et slogan), puis une courte introduction au premier lancement, avec un pseudo facultatif (pas de compte, pas de téléphone ni d’e-mail).
-- Signalement du prix payé, conservé sur l’appareil et, si le réseau est disponible, envoyé à l’API. Hors ligne, l’avis est mis en file d’attente et renvoyé plus tard.
-- Historique des estimations et trajets fréquents (favoris).
-- Écran « Communauté » : médiane des prix signalés, trajet par trajet.
-- Conseils de négociation et de sécurité (dont le casque).
-- Page « Plus » pour le pseudo, les conseils, la méthode de calcul, et pour revoir l’introduction.
-- Écran « Méthode », avec les sources et les limites du modèle.
-- L’application tourne dans Expo Go (Android), dans un navigateur, et peut être installée via un fichier APK.
+- Carte en plein écran et feuille du bas réglable (trois hauteurs), avec l’accueil « Où allez-vous ? » et l’écran de prix de référence.
+- Recherche locale de plus de 3 600 repères du Grand Nokoué (marchés, carrefours, pharmacies, lieux de culte, campus, gares, hôpitaux, quartiers), insensible aux accents, utilisable hors ligne. Les données viennent d’OpenStreetMap (ODbL). Un repère manquant peut être suggéré.
+- Mode hors ligne complet : le barème et les repères sont sur l’appareil. L’itinéraire passe par OSRM en ligne, ou à défaut par la distance à vol d’oiseau majorée d’un facteur de détour de 1,3. Un badge l’indique. Les signalements et suggestions restent en file et partent plus tard.
+- Fourchette en francs CFA, distance et durée indicative. Majoration de nuit (22 h – 6 h, heure de Porto-Novo) et option pluie.
+- Signalement en deux gestes : jetons de prix, tags nuit / pluie / bagage, rôle passager ou conducteur. Un score de fiabilité, calculé côté serveur à partir de l’historique de l’appareil, pondère les avis. Les écarts importants pèsent moins, ils ne sont pas masqués. S’il n’y a pas encore d’avis sur un trajet, l’écran le dit clairement.
+- Carte de prix partageable (image et lien). Le lien rouvre la démo sur le même trajet. Sur le web : téléchargement de l’image ou API Web Share ; sur Android : feuille de partage (WhatsApp, statut, copie du lien).
+- Espace zémidjan (choix du rôle dans le profil) : prix de la course en cours, plein écran contrasté à montrer au client (l’écran reste allumé), recettes du jour conservées sur l’appareil, repère essence à 725 F/L, zones demandées si la communauté en signale assez (sinon un état vide honnête).
+- Écran d’accueil animé, courte introduction, pseudo facultatif (pas de compte).
+- Historique, favoris, communauté, conseils, méthode et sources.
+- L’application tourne dans Expo Go (Android), dans un navigateur, et via un fichier APK.
 
 Un serveur FastAPI rassemble les avis dans une base PostgreSQL. Sans serveur, ou si le service gratuit est endormi, tout reste utilisable en local.
 
@@ -145,7 +142,13 @@ eas build --platform android --profile preview      # APK
 eas build --platform android --profile production   # AAB
 ```
 
-Un APK de la version 1.0.0, pour installation directe, est disponible ici : [zem-tarif-1.0.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.0.0/zem-tarif-1.0.0.apk) (page de la version : [v1.0.0](https://github.com/bienvenuessegnon/zem-tarif/releases/tag/v1.0.0)). Ce fichier a été signé localement avec le keystore de débogage ; il convient à un essai sur un téléphone, pas à une mise en ligne sur le Play Store (qui exige un AAB et une clé de production).
+Les APK, pour installation directe, sont sur la page des versions :
+
+- [zem-tarif-1.1.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.1.0/zem-tarif-1.1.0.apk) (version courante, [v1.1.0](https://github.com/bienvenuessegnon/zem-tarif/releases/tag/v1.1.0))
+- [zem-tarif-1.0.1.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.0.1/zem-tarif-1.0.1.apk)
+- [zem-tarif-1.0.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.0.0/zem-tarif-1.0.0.apk)
+
+Ces fichiers ont été signés localement avec le keystore de débogage ; ils conviennent à un essai sur un téléphone, pas à une mise en ligne sur le Play Store (qui exige un AAB et une clé de production). Un APK signé avec cette clé ne pourra pas être remplacé plus tard par une version EAS ou Play Store.
 
 On peut aussi construire un APK en local, après avoir installé un JDK 17 et le SDK Android, avec `npx expo prebuild --platform android` puis `cd android && ./gradlew assembleRelease`.
 
@@ -177,7 +180,7 @@ EXPO_PUBLIC_API_URL=http://localhost:8000
 
 Une chaîne vide (`EXPO_PUBLIC_API_URL=`) désactive le réseau.
 
-Points d’entrée principaux : `GET /sante`, `POST /signalements`, `GET /stats`. Un identifiant d’appareil limite les envois (8 par heure, 20 par jour). Les prix hors de l’intervalle 50–20 000 F sont refusés. Si l’envoi échoue, l’avis reste sur l’appareil et sera renvoyé plus tard.
+Points d’entrée principaux : `GET /sante`, `POST /signalements`, `GET /stats`, `GET /fiabilite`, `POST /suggestions`, `GET /zones-demandees`. Un identifiant d’appareil limite les envois (8 par heure, 20 par jour). Les prix hors de l’intervalle 50–20 000 F sont refusés. La médiane communautaire est pondérée par la fiabilité de chaque appareil. Si l’envoi échoue, l’avis reste sur l’appareil et sera renvoyé plus tard.
 
 La base de production est un PostgreSQL Render, plan gratuit, région Francfort. Selon la [documentation Render](https://render.com/docs/free.md), une base gratuite expire 30 jours après sa création, avec un délai de grâce de 14 jours pour passer à un plan payant, après quoi elle est supprimée. Elle est limitée à 1 Go, il n’y en a qu’une par espace de travail, et aucun sauvegarde n’est fournie. Les services web gratuits s’endorment après 15 minutes d’inactivité (le réveil prend environ une minute).
 
@@ -185,33 +188,35 @@ Si cette base expire, le schéma `backend/schema.sql` peut être repris tel quel
 
 ### À quoi sert l’application
 
-Le zém se négocie à chaque course. Sans compteur, un visiteur, un nouvel arrivant ou simplement quelqu’un qui prend rarement la moto paie souvent trop cher. Zém Tarif donne une fourchette claire, fondée sur la distance réelle, l’heure et la pluie, et permet à chacun de signaler le prix réellement payé. Plus les avis s’accumulent, plus les fourchettes de la communauté deviennent utiles. Ce n’est pas un tarif imposé : c’est un point de départ pour se mettre d’accord, et un rappel de bon sens (s’entendre avant de monter, avoir de la monnaie, porter un casque).
+Le zém se négocie à chaque course. Zém Tarif donne un prix de référence, fondé sur la distance, l’heure et la pluie, aussi bien au passager qu’au conducteur. Chacun peut signaler le prix réellement convenu. Plus les avis cohérents s’accumulent, plus la médiane de la communauté devient utile. Ce n’est pas un tarif imposé : c’est un point de départ pour se mettre d’accord, et un rappel de bon sens (s’entendre avant de monter, avoir de la monnaie, porter un casque).
 
 ## Captures
 
+- [docs/accueil.png](docs/accueil.png) — accueil « Où allez-vous ? »
+- [docs/recherche.png](docs/recherche.png) — recherche de repères
+- [docs/reference.png](docs/reference.png) — prix de référence
+- [docs/partage.png](docs/partage.png) — carte de prix à partager
+- [docs/signaler.png](docs/signaler.png) — signaler un prix en deux gestes
+- [docs/espace-zem.png](docs/espace-zem.png) — espace zémidjan
 - [docs/splash.png](docs/splash.png) — écran d’accueil, logo et slogan
 - [docs/onboarding.png](docs/onboarding.png) — introduction au premier lancement
-- [docs/estimer.png](docs/estimer.png) — écran d’estimation, carte et feuille du bas
 - [docs/communaute.png](docs/communaute.png) — prix de la communauté
 - [docs/conseils.png](docs/conseils.png) — conseils de négociation et de sécurité
-- [docs/plus.png](docs/plus.png) — profil, pseudo et réglages
-- [docs/detail.png](docs/detail.png) — détail du calcul
-- [docs/methode.png](docs/methode.png) — sources et limites
-- [docs/historique.png](docs/historique.png) — trajets fréquents et historique
-- [docs/signaler.png](docs/signaler.png) — signaler un prix payé
+- [docs/plus.png](docs/plus.png) — profil et choix du rôle
 
 ## Technique
 
 - React Native et Expo (TypeScript), Expo Router.
-- Le calcul du prix est isolé dans `src/pricing/`, sans dépendance à React, et testé avec Jest.
+- Le calcul du prix, la recherche de repères et le score de fiabilité sont isolés et testés avec Jest.
+- Jeu de repères : `assets/data/reperes.json`, extrait des données OpenStreetMap (© les contributeurs d’OpenStreetMap, [ODbL](https://opendatacommons.org/licenses/odbl/)). Extrait Geofabrik, Bénin.
 - Cartes : tuiles OpenStreetMap, via Leaflet.
-- Stockage local : AsyncStorage (historique, favoris, file d’attente, profil).
+- Stockage local : AsyncStorage (historique, favoris, file d’attente, profil, recettes, suggestions).
 - Animations : react-native-reanimated (feuille, compteur de prix, transitions).
 - Typographie : Plus Jakarta Sans (SIL Open Font License).
 - Fuseau horaire utilisé pour la nuit : Africa/Porto-Novo.
 - API : FastAPI et PostgreSQL (SQLite en secours, en local).
 
-Nominatim est interrogé au plus une fois par seconde, avec un identifiant de contact, conformément à [sa politique d’usage](https://operations.osmfoundation.org/policies/nominatim/). Les cartes portent la mention © les contributeurs d’OpenStreetMap.
+Nominatim n’est plus nécessaire pour la recherche de repères, qui se fait en local. S’il est encore interrogé ailleurs, ce sera au plus une fois par seconde, avec un identifiant de contact, conformément à [sa politique d’usage](https://operations.osmfoundation.org/policies/nominatim/). Les cartes et le jeu de repères portent la mention © les contributeurs d’OpenStreetMap (ODbL).
 
 ## Licence
 
