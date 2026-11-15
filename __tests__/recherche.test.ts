@@ -1,4 +1,4 @@
-import { distanceEdition, jetons, sansAccents } from '../src/geo/normaliser';
+import { distanceEdition, formeRecherche, jetons, sansAccents } from '../src/geo/normaliser';
 import { rechercherReperes } from '../src/geo/recherche';
 import { NOMBRE_REPERES, REPERES_BUNDLES, type Reper } from '../src/geo/reperes';
 
@@ -54,6 +54,7 @@ describe('normalisation', () => {
     expect(sansAccents('Étoile Rouge')).toBe('etoile rouge');
     expect(sansAccents('Cadjèhoun')).toBe('cadjehoun');
     expect(jetons('Saint-Michel')).toEqual(['saint', 'michel']);
+    expect(formeRecherche('Carrefour Saint-Michel')).toBe('carrefour saint michel');
   });
 
   it('mesure une faute d’une lettre', () => {
@@ -107,6 +108,104 @@ describe('jeu bundlé', () => {
     const a = rechercherReperes('dantokpa');
     expect(a[0]?.reper.nom.toLowerCase()).toContain('dantokpa');
     const b = rechercherReperes('saint mi');
-    expect(b.some((x) => /saint-michel|saint michel/i.test(x.reper.nom))).toBe(true);
+    expect(b[0]?.reper.categorie).toBe('carrefour');
+    expect(b[0]?.reper.nom).toMatch(/carrefour saint-michel/i);
+  });
+});
+
+describe('priorité des repères utiles au trajet', () => {
+  const eglise: Reper = {
+    id: 'eglise-sm',
+    nom: 'Saint Michel de Togudo',
+    type: 'Église',
+    categorie: 'culte',
+    icone: 'home',
+    detail: 'Togudo',
+    lat: 6.37,
+    lon: 2.42,
+    source: 'osm',
+  };
+  const carrefour: Reper = {
+    id: 'carrefour-sm',
+    nom: 'Carrefour Saint-Michel',
+    type: 'Carrefour',
+    categorie: 'carrefour',
+    icone: 'git-merge',
+    detail: 'Cotonou',
+    lat: 6.3655,
+    lon: 2.4185,
+    source: 'curate',
+  };
+  const pharmacie: Reper = {
+    id: 'pharma-sm',
+    nom: 'Pharmacie Saint-Michel',
+    type: 'Pharmacie',
+    categorie: 'pharmacie',
+    icone: 'plus',
+    lat: 6.366,
+    lon: 2.419,
+    source: 'osm',
+  };
+  const marche: Reper = {
+    id: 'marche-sm',
+    nom: 'Marché Saint-Michel',
+    type: 'Marché',
+    categorie: 'marche',
+    icone: 'shopping-bag',
+    lat: 6.366,
+    lon: 2.42,
+    source: 'osm',
+  };
+  const gare: Reper = {
+    id: 'gare-sm',
+    nom: 'Gare routière de Saint-Michel',
+    type: 'Gare routière',
+    categorie: 'gare',
+    icone: 'truck',
+    lat: 6.367,
+    lon: 2.417,
+    source: 'osm',
+  };
+  const quartier: Reper = {
+    id: 'quartier-sm',
+    nom: 'Saint-Michel',
+    type: 'Quartier',
+    categorie: 'quartier',
+    icone: 'map-pin',
+    detail: 'Cotonou',
+    lat: 6.365,
+    lon: 2.418,
+    source: 'osm',
+  };
+
+  it('place le carrefour avant les églises et pharmacies pour « saint mi »', () => {
+    const r = rechercherReperes('saint mi', {
+      jeu: [eglise, pharmacie, carrefour],
+    });
+    expect(r[0]?.reper.id).toBe('carrefour-sm');
+    expect(r.map((x) => x.reper.categorie)).toEqual(
+      expect.arrayContaining(['carrefour', 'culte', 'pharmacie']),
+    );
+  });
+
+  it('place aussi les marchés, gares et quartiers devant une église à score proche', () => {
+    for (const utile of [marche, gare, quartier]) {
+      const r = rechercherReperes('saint mi', { jeu: [eglise, utile] });
+      expect(r[0]?.reper.id).toBe(utile.id);
+    }
+  });
+
+  it('garde une église en tête quand la requête la désigne clairement', () => {
+    const r = rechercherReperes('saint michel de togudo', {
+      jeu: [eglise, carrefour, pharmacie],
+    });
+    expect(r[0]?.reper.id).toBe('eglise-sm');
+  });
+
+  it('garde une pharmacie en tête pour une requête « pharmacie … »', () => {
+    const r = rechercherReperes('pharmacie saint michel', {
+      jeu: [eglise, carrefour, pharmacie],
+    });
+    expect(r[0]?.reper.id).toBe('pharma-sm');
   });
 });

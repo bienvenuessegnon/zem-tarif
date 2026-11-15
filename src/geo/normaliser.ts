@@ -36,3 +36,11 @@ export function distanceEdition(a: string, b: string): number {
   }
   return ligne[b.length];
 }
+
+/** Forme comparable : accents, casse, tirets et ponctuation ignorés. */
+export function formeRecherche(saisie: string): string {
+  return sansAccents(saisie)
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
