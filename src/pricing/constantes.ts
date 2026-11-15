@@ -1,47 +1,53 @@
 /**
- * Paramètres du modèle de base.
+ * Barème de base — seul fichier à modifier si de nouveaux prix
+ * de terrain sont fournis.
  *
- * Il n'existe pas, à notre connaissance, de grille officielle ou syndicale
- * pour le zémidjan de rue à Cotonou : le prix se négocie avant le départ.
- * Les constantes ci-dessous sont un barème transparent, calé sur des
- * fourchettes publiées (voir data/reperes-publies.json et le README).
- * Ce n'est pas un tarif réglementaire.
+ * Il n'existe pas de grille officielle ou syndicale pour le zém de rue.
+ * Les constantes ci-dessous sont un barème transparent, calé en novembre
+ * 2026 sur des fourchettes publiées (voir src/contenu/reperes-publies.ts
+ * et le README). Ce n'est pas un tarif réglementaire.
+ *
+ * Formule :
+ *   prix = max(PLANCHER_FCFA, PRISE_EN_CHARGE_FCFA + TARIF_KM_FCFA × km)
+ *   puis × COEFF_NUIT et/ou × COEFF_PLUIE, arrondi à PAS_ARRONDI_FCFA.
+ *
+ * Calage visé, de jour et par temps sec :
+ *   ~2,4 km (Haie Vive – Cadjèhoun)  → 300 F
+ *   ~5,3 km (Haie Vive – Ganhi)      → 500 F
+ *   ~11,7 km (Fidjrossè – Akpakpa)   → 900 F
+ *   ~16 km (vers Calavi)             → 1 200 F
  */
 
-/** Prise en charge, égale au minimum historique encore cité (100 F). */
-export const PRISE_EN_CHARGE_FCFA = 100;
+/** Prise en charge du barème 2026, en F CFA. */
+export const PRISE_EN_CHARGE_FCFA = 150;
+
+/** Prix au kilomètre du barème 2026, en F CFA. */
+export const TARIF_KM_FCFA = 65;
 
 /**
- * Prix au kilomètre du modèle de base, en F CFA.
- * Calé pour rester dans les fourchettes récentes tout en restant
- * compatible, une fois le carburant pris en compte, avec le rapport
- * SSATP de 2019 (voir README).
+ * Plancher pratique fin 2026.
+ * Une course très courte se négocie le plus souvent 250 à 300 F
+ * (Ahouandjo, 12 novembre 2026). Le minimum historique de 100 F,
+ * encore cité, n'est plus le plancher observé.
  */
-export const TARIF_KM_FCFA = 60;
-
-/**
- * Plancher pratique 2024-2026 : un trajet très court se négocie
- * rarement sous 200 F, même si 100 F reste le minimum historique.
- */
-export const PLANCHER_FCFA = 200;
+export const PLANCHER_FCFA = 250;
 
 /** Nuit : de 22 h inclusive à 6 h exclusive, heure de Porto-Novo. */
 export const HEURE_DEBUT_NUIT = 22;
 export const HEURE_FIN_NUIT = 6;
 
 /**
- * Majoration de nuit. Milieu de la fourchette +20 à 30 % indiquée
- * par le guide icotonou.com (2026). D'autres récits parlent d'une
- * hausse plus forte : la fourchette haute du modèle en tient une
- * partie, sans aller jusqu'à un doublement.
+ * Majoration de nuit. Milieu de la fourchette +20 à 30 %
+ * (icotonou.com, 2026). D'autres récits parlent de 1,5 à 2 fois
+ * (benin360, mai 2026) : la fourchette haute en absorbe une partie,
+ * sans aller jusqu'à un doublement.
  */
 export const COEFF_NUIT = 1.25;
 
 /**
  * Majoration « pluie / voie dégradée ».
- * En 2014, La Nouvelle Tribune rapportait un trajet habituel à 400 F
- * payé 600 F sous la pluie (+50 %). Le coefficient 1,30 reste en
- * deçà de ce témoignage, volontairement prudent.
+ * En 2014, La Nouvelle Tribune rapportait 400 F payés 600 F sous la
+ * pluie (+50 %). Le coefficient 1,30 reste volontairement plus prudent.
  */
 export const COEFF_PLUIE = 1.3;
 

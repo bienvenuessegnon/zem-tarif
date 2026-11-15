@@ -87,37 +87,40 @@ describe('arrondi', () => {
 });
 
 describe('modèle de base, calé sur les fourchettes publiées', () => {
-  test('un trajet nul ou très court reste au plancher de 200 F le jour, par temps sec', () => {
+  test('un trajet nul ou très court reste au plancher de 250 F le jour, par temps sec', () => {
     const t = tarifDeBase(0, { heure: 10, pluie: false });
     expect(t.point).toBe(PLANCHER_FCFA);
     expect(t.bas).toBe(PLANCHER_FCFA);
     expect(t.haut).toBeGreaterThanOrEqual(t.point);
   });
 
-  test('Haie Vive → Cadjèhoun, environ 2,4 km : autour de 200-300 F', () => {
+  test('Haie Vive → Cadjèhoun, environ 2,4 km : autour de 300 F', () => {
     const t = tarifDeBase(2400, { heure: 11, pluie: false });
-    expect(t.point).toBeGreaterThanOrEqual(200);
-    expect(t.point).toBeLessThanOrEqual(300);
+    expect(t.point).toBeGreaterThanOrEqual(250);
+    expect(t.point).toBeLessThanOrEqual(350);
+    expect(t.point).toBe(300);
     expect(t.bas).toBeLessThanOrEqual(t.point);
     expect(t.haut).toBeGreaterThanOrEqual(t.point);
   });
 
-  test('Haie Vive → Ganhi, 5,3 km : dans la fourchette moyenne 350-600 F', () => {
+  test('Haie Vive → Ganhi, 5,3 km : autour de 500 F', () => {
     const t = tarifDeBase(5340, { heure: 11, pluie: false });
-    expect(t.point).toBeGreaterThanOrEqual(350);
-    expect(t.point).toBeLessThanOrEqual(600);
+    expect(t.point).toBeGreaterThanOrEqual(450);
+    expect(t.point).toBeLessThanOrEqual(550);
+    expect(t.point).toBe(500);
   });
 
-  test('Fidjrossè → Akpakpa, 11,7 km : dans la fourchette longue 650-1050 F', () => {
+  test('Fidjrossè → Akpakpa, 11,7 km : autour de 900 F', () => {
     const t = tarifDeBase(11740, { heure: 11, pluie: false });
-    expect(t.point).toBeGreaterThanOrEqual(650);
-    expect(t.point).toBeLessThanOrEqual(1050);
+    expect(t.point).toBeGreaterThanOrEqual(850);
+    expect(t.point).toBeLessThanOrEqual(1000);
+    expect(t.point).toBe(900);
   });
 
-  test('UAC → Dantokpa, 14,4 km : autour de 900-1400 F', () => {
+  test('UAC → Dantokpa, 14,4 km : autour de 1 100 F', () => {
     const t = tarifDeBase(14370, { heure: 11, pluie: false });
-    expect(t.point).toBeGreaterThanOrEqual(850);
-    expect(t.point).toBeLessThanOrEqual(1400);
+    expect(t.point).toBeGreaterThanOrEqual(1000);
+    expect(t.point).toBeLessThanOrEqual(1200);
   });
 
   test('la prise en charge et le tarif au km sont bien ceux du barème', () => {
