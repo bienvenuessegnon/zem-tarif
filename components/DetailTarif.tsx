@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { formatFcfa, formatKm } from '@/src/pricing/format';
-import { COEFF_NUIT, COEFF_PLUIE, TARIF_KM_FCFA } from '@/src/pricing/constantes';
+import { TARIF_KM_FCFA } from '@/src/pricing/constantes';
 import type { Estimation } from '@/src/pricing/types';
 import { couleurs } from '@/src/theme/colors';
 import { typo } from '@/src/theme/typo';
@@ -17,10 +17,10 @@ export function DetailTarif({ estimation }: Props) {
         valeur={formatFcfa(estimation.partKilometrique)}
       />
       {estimation.nuit ? (
-        <Ligne libelle={`Majoration de nuit (× ${COEFF_NUIT})`} valeur="oui" />
+        <Ligne libelle={`Majoration de nuit (× 1,25)`} valeur="oui" />
       ) : null}
       {estimation.pluie ? (
-        <Ligne libelle={`Pluie ou voie dégradée (× ${COEFF_PLUIE})`} valeur="oui" />
+        <Ligne libelle={`Pluie ou voie dégradée (× 1,30)`} valeur="oui" />
       ) : null}
       {estimation.sourcePrix === 'melange' && estimation.medianeSignalements !== null ? (
         <Ligne
@@ -33,15 +33,7 @@ export function DetailTarif({ estimation }: Props) {
   );
 }
 
-function Ligne({
-  libelle,
-  valeur,
-  gras,
-}: {
-  libelle: string;
-  valeur: string;
-  gras?: boolean;
-}) {
+function Ligne({ libelle, valeur, gras }: { libelle: string; valeur: string; gras?: boolean }) {
   return (
     <View style={styles.ligne}>
       <Text style={[styles.libelle, gras && styles.gras]}>{libelle}</Text>
@@ -60,7 +52,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   ligne: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
-  libelle: { fontFamily: typo.sans, fontSize: 13, color: couleurs.secondaire, flex: 1 },
-  valeur: { fontFamily: typo.sans, fontSize: 13, color: couleurs.encre },
-  gras: { fontFamily: typo.sansMoyen, color: couleurs.encre },
+  libelle: { fontFamily: typo.regular, fontSize: 13, color: couleurs.muet, flex: 1 },
+  valeur: { fontFamily: typo.medium, fontSize: 13, color: couleurs.encre },
+  gras: { fontFamily: typo.semi, color: couleurs.encre },
 });

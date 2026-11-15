@@ -11,12 +11,37 @@ export type BrouillonCourse = {
   estimation: Estimation;
 };
 
+const CLE = 'zem-tarif-brouillon';
+
 let brouillon: BrouillonCourse | null = null;
+
+function stockage(): Storage | null {
+  try {
+    if (typeof sessionStorage === 'undefined') return null;
+    return sessionStorage;
+  } catch {
+    return null;
+  }
+}
 
 export function poserBrouillon(valeur: BrouillonCourse): void {
   brouillon = valeur;
+  try {
+    stockage()?.setItem(CLE, JSON.stringify(valeur));
+  } catch {
+    // Le brouillon reste en mémoire si le stockage est indisponible.
+  }
 }
 
 export function lireBrouillon(): BrouillonCourse | null {
+  if (brouillon) return brouillon;
+  try {
+    const brut = stockage()?.getItem(CLE);
+    if (brut) {
+      brouillon = JSON.parse(brut) as BrouillonCourse;
+    }
+  } catch {
+    brouillon = null;
+  }
   return brouillon;
 }

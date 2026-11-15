@@ -3,8 +3,10 @@ import { ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
 import { Bouton } from '@/components/Bouton';
+import { Icone } from '@/components/Icone';
 import { envoyerSignalement } from '@/src/api/client';
 import { lireBrouillon } from '@/src/contenu/brouillon';
+import { toucherSucces } from '@/src/contenu/haptique';
 import { nouvelId } from '@/src/contenu/identifiants';
 import { formatFcfa, formatKm } from '@/src/pricing/format';
 import { estNuit } from '@/src/pricing/horaire';
@@ -13,6 +15,7 @@ import { ajouterHistorique } from '@/src/storage/historique';
 import { ajouterSignalement } from '@/src/storage/signalements';
 import { couleurs } from '@/src/theme/colors';
 import { typo } from '@/src/theme/typo';
+import { rayon } from '@/src/theme/espace';
 
 export default function EcranSignaler() {
   const router = useRouter();
@@ -26,6 +29,9 @@ export default function EcranSignaler() {
   if (!brouillon) {
     return (
       <View style={styles.vide}>
+        <View style={styles.videIcone}>
+          <Icone nom="tag" taille={22} couleur={couleurs.orFonce} />
+        </View>
         <Text style={styles.videTexte}>
           Commencez par estimer un trajet, puis signalez le prix réellement payé.
         </Text>
@@ -78,6 +84,7 @@ export default function EcranSignaler() {
         ? 'Prix enregistré sur cet appareil et envoyé au serveur optionnel.'
         : 'Prix enregistré sur cet appareil. Aucun serveur n’est configuré, ou l’envoi a échoué : l’avis reste local.',
     );
+    void toucherSucces();
   }
 
   return (
@@ -94,7 +101,7 @@ export default function EcranSignaler() {
         value={prix}
         onChangeText={setPrix}
         keyboardType="numeric"
-        placeholder="ex. 400"
+        placeholder="ex. 500"
         placeholderTextColor={couleurs.muet}
         style={styles.champ}
         accessibilityLabel="Prix payé en francs CFA"
@@ -115,30 +122,40 @@ export default function EcranSignaler() {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: couleurs.papier },
+  page: { flex: 1, backgroundColor: couleurs.fond },
   contenu: { padding: 20, paddingBottom: 40 },
-  vide: { flex: 1, backgroundColor: couleurs.papier, padding: 24, justifyContent: 'center', gap: 20 },
-  videTexte: { fontFamily: typo.sans, fontSize: 16, color: couleurs.secondaire, lineHeight: 24 },
-  trajet: { fontFamily: typo.serifMoyen, fontSize: 26, color: couleurs.encre, lineHeight: 32 },
-  meta: { fontFamily: typo.sans, fontSize: 14, color: couleurs.secondaire, marginTop: 8, marginBottom: 28 },
+  vide: { flex: 1, backgroundColor: couleurs.fond, padding: 24, justifyContent: 'center', gap: 16 },
+  videIcone: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: couleurs.orPale,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  videTexte: { fontFamily: typo.regular, fontSize: 16, color: couleurs.encreDouce, lineHeight: 24 },
+  trajet: { fontFamily: typo.semi, fontSize: 24, color: couleurs.encre, lineHeight: 30 },
+  meta: { fontFamily: typo.regular, fontSize: 14, color: couleurs.muet, marginTop: 8, marginBottom: 28 },
   etiquette: {
-    fontFamily: typo.sansMoyen,
-    fontSize: 12,
+    fontFamily: typo.medium,
+    fontSize: 11,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    color: couleurs.secondaire,
+    color: couleurs.muet,
     marginBottom: 8,
   },
   champ: {
-    fontFamily: typo.serifGras,
-    fontSize: 40,
+    fontFamily: typo.bold,
+    fontSize: 44,
     color: couleurs.encre,
-    borderBottomWidth: 1,
-    borderBottomColor: couleurs.encre,
-    paddingVertical: 8,
+    backgroundColor: couleurs.surface,
+    borderRadius: rayon.md,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     marginBottom: 16,
+    letterSpacing: -1,
     outlineStyle: 'none',
   } as object,
-  aide: { fontFamily: typo.sans, fontSize: 14, color: couleurs.secondaire, lineHeight: 20, marginBottom: 24 },
-  ok: { fontFamily: typo.sans, fontSize: 14, color: couleurs.vert, marginTop: 16, lineHeight: 20 },
+  aide: { fontFamily: typo.regular, fontSize: 14, color: couleurs.encreDouce, lineHeight: 20, marginBottom: 24 },
+  ok: { fontFamily: typo.regular, fontSize: 14, color: couleurs.succes, marginTop: 16, lineHeight: 20 },
 });

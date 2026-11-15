@@ -7,17 +7,21 @@ type Props = {
   dest?: { lat: number; lon: number; label: string };
   geometrie?: [number, number][];
   hauteur?: number;
+  pleinEcran?: boolean;
+  paddingBas?: number;
 };
 
 function htmlCarte(
   origin?: Props['origin'],
   dest?: Props['dest'],
   geometrie?: [number, number][],
+  paddingBas = 28,
 ): string {
   const payload = JSON.stringify({
     origin: origin ?? null,
     dest: dest ?? null,
     geometrie: geometrie ?? [],
+    paddingBas,
   });
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -26,11 +30,11 @@ function htmlCarte(
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    html, body, #carte { height: 100%; margin: 0; background: #EBE6DB; }
+    html, body, #carte { height: 100%; margin: 0; background: #E8E8E4; }
     .leaflet-control-attribution {
       font-size: 10px;
-      background: rgba(244,241,234,0.92) !important;
-      color: #5E5953;
+      background: rgba(244,244,242,0.92) !important;
+      color: #8A8A86;
     }
     .marqueur {
       width: 16px; height: 16px; border-radius: 16px;
@@ -68,10 +72,10 @@ function htmlCarte(
       const latlngs = data.geometrie.map(function (c) { return [c[1], c[0]]; });
       const ligne = L.polyline(latlngs, { color: '#1C1917', weight: 4, opacity: 0.85 });
       ligne.addTo(carte);
-      carte.fitBounds(ligne.getBounds(), { padding: [28, 28] });
+      carte.fitBounds(ligne.getBounds(), { paddingTopLeft: [28, 80], paddingBottomRight: [28, data.paddingBas || 28] });
     } else if (bornes.length === 2) {
       L.polyline(bornes, { color: '#1C1917', weight: 3, dashArray: '6 8', opacity: 0.7 }).addTo(carte);
-      carte.fitBounds(L.latLngBounds(bornes), { padding: [28, 28] });
+      carte.fitBounds(L.latLngBounds(bornes), { paddingTopLeft: [28, 80], paddingBottomRight: [28, data.paddingBas || 28] });
     } else if (bornes.length === 1) {
       carte.setView(bornes[0], 14);
     } else {
@@ -82,15 +86,17 @@ function htmlCarte(
 </html>`;
 }
 
-export function CarteItineraire({ origin, dest, geometrie, hauteur = 210 }: Props) {
+export function CarteItineraire({ origin, dest, geometrie, hauteur = 210, pleinEcran = false, paddingBas = 28 }: Props) {
   const html = useMemo(
-    () => htmlCarte(origin, dest, geometrie),
-    [origin, dest, geometrie],
+    () => htmlCarte(origin, dest, geometrie, paddingBas),
+    [origin, dest, geometrie, paddingBas],
   );
+
+  const cadre = [styles.cadre, pleinEcran ? styles.plein : { height: hauteur }];
 
   if (Platform.OS === 'web') {
     return (
-      <View style={[styles.cadre, { height: hauteur }]}>
+      <View style={cadre}>
         <iframe
           title="Carte du trajet"
           srcDoc={html}
@@ -102,7 +108,7 @@ export function CarteItineraire({ origin, dest, geometrie, hauteur = 210 }: Prop
   }
 
   return (
-    <View style={[styles.cadre, { height: hauteur }]}>
+    <View style={cadre}>
       <WebView
         originWhitelist={['*']}
         source={{ html }}
@@ -117,10 +123,17 @@ export function CarteItineraire({ origin, dest, geometrie, hauteur = 210 }: Prop
 const styles = StyleSheet.create({
   cadre: {
     overflow: 'hidden',
-    borderRadius: 2,
-    borderWidth: 1,
-    borderColor: '#DDD6C9',
-    backgroundColor: '#EBE6DB',
+    borderRadius: 16,
+    backgroundColor: '#E8E8E4',
+  },
+  plein: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: 0,
+    zIndex: 0,
   },
   web: { flex: 1, backgroundColor: '#EBE6DB' },
 });

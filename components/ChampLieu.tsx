@@ -8,13 +8,16 @@ import {
   View,
 } from 'react-native';
 
+import { Icone } from '@/components/Icone';
 import { filtrerReperes, type Lieu } from '@/src/geo/lieux';
 import { chercherLieux } from '@/src/geo/nominatim';
 import { couleurs } from '@/src/theme/colors';
 import { typo } from '@/src/theme/typo';
+import { rayon } from '@/src/theme/espace';
 
 type Props = {
   etiquette: string;
+  icone: 'circle' | 'map-pin';
   valeur?: Lieu | null;
   saisie: string;
   onSaisie: (texte: string) => void;
@@ -24,6 +27,7 @@ type Props = {
 
 export function ChampLieu({
   etiquette,
+  icone,
   valeur,
   saisie,
   onSaisie,
@@ -53,9 +57,7 @@ export function ChampLieu({
       setErreur(null);
       chercherLieux(saisie, controleur.signal)
         .then((lieux) => {
-          if (!controleur.signal.aborted) {
-            setReseau(lieux);
-          }
+          if (!controleur.signal.aborted) setReseau(lieux);
         })
         .catch((e: unknown) => {
           if (!controleur.signal.aborted && (e as { name?: string }).name !== 'AbortError') {
@@ -63,9 +65,7 @@ export function ChampLieu({
           }
         })
         .finally(() => {
-          if (!controleur.signal.aborted) {
-            setChargement(false);
-          }
+          if (!controleur.signal.aborted) setChargement(false);
         });
     }, 400);
     return () => {
@@ -75,32 +75,55 @@ export function ChampLieu({
   }, [saisie]);
 
   const suggestions = dedupliquer([...locaux, ...reseau]);
+  const texte = valeur && saisie === valeur.label ? valeur.label : saisie;
 
   return (
     <View style={styles.bloc}>
-      <Text style={styles.etiquette}>{etiquette}</Text>
       <View style={styles.ligne}>
-        <TextInput
-          value={valeur && saisie === valeur.label ? valeur.label : saisie}
-          onChangeText={(t) => {
-            onSaisie(t);
-            setOuvert(true);
-          }}
-          onFocus={() => setOuvert(true)}
-          placeholder="Quartier, marché, carrefour…"
-          placeholderTextColor={couleurs.muet}
-          style={styles.champ}
-          autoCorrect={false}
-          autoCapitalize="none"
-          accessibilityLabel={etiquette}
-        />
-        {(valeur || saisie) ? (
-          <Pressable onPress={onEffacer} hitSlop={8} accessibilityLabel="Effacer">
-            <Text style={styles.effacer}>Effacer</Text>
+        <View
+          style={[
+            styles.picto,
+            icone === 'map-pin' ? styles.pictoArrivee : styles.pictoDepart,
+          ]}
+        >
+          <Icone
+            nom={icone === 'map-pin' ? 'map-pin' : 'circle'}
+            taille={icone === 'map-pin' ? 14 : 10}
+            couleur={icone === 'map-pin' ? couleurs.encre : couleurs.orFonce}
+          />
+        </View>
+        <View style={styles.champBloc}>
+          <Text style={styles.etiquette}>{etiquette}</Text>
+          <TextInput
+            value={texte}
+            onChangeText={(t) => {
+              onSaisie(t);
+              setOuvert(true);
+            }}
+            onFocus={() => setOuvert(true)}
+            placeholder="Quartier, marché, carrefour…"
+            placeholderTextColor={couleurs.muet}
+            style={styles.champ}
+            autoCorrect={false}
+            autoCapitalize="none"
+            accessibilityLabel={etiquette}
+          />
+        </View>
+        {valeur || saisie ? (
+          <Pressable
+            onPress={() => {
+              onEffacer();
+              setOuvert(false);
+            }}
+            hitSlop={10}
+            accessibilityLabel="Effacer"
+            style={styles.effacerBtn}
+          >
+            <Icone nom="x" taille={16} couleur={couleurs.muet} />
           </Pressable>
         ) : null}
       </View>
-      {ouvert && suggestions.length > 0 ? (
+      {ouvert && (suggestions.length > 0 || chargement || erreur) ? (
         <View style={styles.liste}>
           {suggestions.map((lieu, i) => (
             <Pressable
@@ -111,13 +134,16 @@ export function ChampLieu({
               }}
               style={({ pressed }) => [styles.item, pressed && styles.itemPresse]}
             >
-              <Text style={styles.itemTitre}>{lieu.label}</Text>
-              {lieu.detail ? <Text style={styles.itemDetail}>{lieu.detail}</Text> : null}
+              <Icone nom="map-pin" taille={14} couleur={couleurs.muet} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.itemTitre}>{lieu.label}</Text>
+                {lieu.detail ? <Text style={styles.itemDetail} numberOfLines={1}>{lieu.detail}</Text> : null}
+              </View>
             </Pressable>
           ))}
           {chargement ? (
             <View style={styles.pied}>
-              <ActivityIndicator size="small" color={couleurs.orFonce} />
+              <ActivityIndicator size="small" color={couleurs.encre} />
               <Text style={styles.piedTexte}>Recherche OpenStreetMap…</Text>
             </View>
           ) : null}
@@ -137,50 +163,69 @@ function dedupliquer(lieux: Lieu[]): Lieu[] {
     vus.add(cle);
     sortie.push(lieu);
   }
-  return sortie.slice(0, 10);
+  return sortie.slice(0, 8);
 }
 
 const styles = StyleSheet.create({
-  bloc: { marginBottom: 14 },
-  etiquette: {
-    fontFamily: typo.sansMoyen,
-    fontSize: 12,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    color: couleurs.secondaire,
-    marginBottom: 6,
-  },
+  bloc: { marginBottom: 2 },
   ligne: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: couleurs.encre,
-    paddingBottom: 6,
-    gap: 8,
+    gap: 12,
+    paddingVertical: 8,
+  },
+  picto: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pictoDepart: { backgroundColor: couleurs.orPale },
+  pictoArrivee: { backgroundColor: couleurs.fond },
+  champBloc: { flex: 1 },
+  etiquette: {
+    fontFamily: typo.medium,
+    fontSize: 11,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: couleurs.muet,
+    marginBottom: 2,
   },
   champ: {
-    flex: 1,
-    fontFamily: typo.sans,
-    fontSize: 18,
+    fontFamily: typo.semi,
+    fontSize: 16,
     color: couleurs.encre,
-    paddingVertical: 6,
+    paddingVertical: 0,
     outlineStyle: 'none',
   } as object,
-  effacer: {
-    fontFamily: typo.sans,
-    fontSize: 13,
-    color: couleurs.secondaire,
+  effacerBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: couleurs.fond,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   liste: {
-    backgroundColor: couleurs.carte,
+    backgroundColor: couleurs.surface,
+    borderRadius: rayon.md,
     borderWidth: 1,
     borderColor: couleurs.ligne,
     marginTop: 4,
+    marginLeft: 40,
+    overflow: 'hidden',
   },
-  item: { paddingHorizontal: 12, paddingVertical: 10 },
-  itemPresse: { backgroundColor: couleurs.papierFonce },
-  itemTitre: { fontFamily: typo.sansMoyen, fontSize: 16, color: couleurs.encre },
-  itemDetail: { fontFamily: typo.sans, fontSize: 12, color: couleurs.secondaire, marginTop: 2 },
+  item: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  itemPresse: { backgroundColor: couleurs.fond },
+  itemTitre: { fontFamily: typo.medium, fontSize: 15, color: couleurs.encre },
+  itemDetail: { fontFamily: typo.regular, fontSize: 12, color: couleurs.muet, marginTop: 1 },
   pied: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -188,9 +233,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  piedTexte: { fontFamily: typo.sans, fontSize: 12, color: couleurs.secondaire },
+  piedTexte: { fontFamily: typo.regular, fontSize: 12, color: couleurs.muet },
   erreur: {
-    fontFamily: typo.sans,
+    fontFamily: typo.regular,
     fontSize: 12,
     color: couleurs.alerte,
     paddingHorizontal: 12,

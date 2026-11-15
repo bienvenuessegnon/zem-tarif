@@ -1,8 +1,10 @@
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
+import { toucherLeger } from '@/src/contenu/haptique';
 import { REPERES, type Lieu } from '@/src/geo/lieux';
 import { couleurs } from '@/src/theme/colors';
 import { typo } from '@/src/theme/typo';
+import { rayon } from '@/src/theme/espace';
 
 type Props = {
   onChoix: (lieu: Lieu, role: 'depart' | 'arrivee') => void;
@@ -19,7 +21,10 @@ export function JetonsReperes({ onChoix, depart }: Props) {
       {REPERES.map((lieu) => (
         <Pressable
           key={lieu.id ?? lieu.label}
-          onPress={() => onChoix(lieu, depart ? 'arrivee' : 'depart')}
+          onPress={() => {
+            void toucherLeger();
+            onChoix(lieu, depart ? 'arrivee' : 'depart');
+          }}
           style={({ pressed }) => [styles.jeton, pressed && styles.presse]}
         >
           <Text style={styles.texte}>{lieu.label}</Text>
@@ -34,10 +39,11 @@ const styles = StyleSheet.create({
   jeton: {
     borderWidth: 1,
     borderColor: couleurs.ligne,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    backgroundColor: couleurs.carte,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: rayon.full,
+    backgroundColor: couleurs.fond,
   },
-  presse: { backgroundColor: couleurs.orPale, borderColor: couleurs.orFonce },
-  texte: { fontFamily: typo.sans, fontSize: 13, color: couleurs.encre },
+  presse: { backgroundColor: couleurs.orPale, borderColor: couleurs.or },
+  texte: { fontFamily: typo.medium, fontSize: 13, color: couleurs.encre },
 });

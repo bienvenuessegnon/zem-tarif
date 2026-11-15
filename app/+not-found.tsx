@@ -21,16 +21,15 @@ export default function Introuvable() {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: couleurs.papier,
+    backgroundColor: couleurs.fond,
     padding: 24,
     justifyContent: 'center',
   },
-  titre: { fontFamily: typo.serifMoyen, fontSize: 24, color: couleurs.encre },
+  titre: { fontFamily: typo.semi, fontSize: 22, color: couleurs.encre },
   lien: { marginTop: 16 },
   lienTexte: {
-    fontFamily: typo.sansMoyen,
+    fontFamily: typo.medium,
     fontSize: 16,
     color: couleurs.orFonce,
-    textDecorationLine: 'underline',
   },
 });

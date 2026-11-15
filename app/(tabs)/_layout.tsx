@@ -1,7 +1,9 @@
 import { Tabs } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 
+import { Icone, type NomIcone } from '@/components/Icone';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { toucherLeger } from '@/src/contenu/haptique';
 import { couleurs } from '@/src/theme/colors';
 import { typo } from '@/src/theme/typo';
 
@@ -10,11 +12,11 @@ export default function Onglets() {
     <Tabs
       screenOptions={{
         headerShown: useClientOnlyValue(false, true),
-        headerStyle: { backgroundColor: couleurs.papier },
+        headerStyle: { backgroundColor: couleurs.fond },
         headerShadowVisible: false,
         headerTitleStyle: {
-          fontFamily: typo.serifMoyen,
-          fontSize: 22,
+          fontFamily: typo.semi,
+          fontSize: 20,
           color: couleurs.encre,
         },
         headerTintColor: couleurs.encre,
@@ -22,7 +24,12 @@ export default function Onglets() {
         tabBarActiveTintColor: couleurs.encre,
         tabBarInactiveTintColor: couleurs.muet,
         tabBarLabelStyle: styles.label,
-        sceneStyle: { backgroundColor: couleurs.papier },
+        sceneStyle: { backgroundColor: couleurs.fond },
+      }}
+      screenListeners={{
+        tabPress: () => {
+          void toucherLeger();
+        },
       }}
     >
       <Tabs.Screen
@@ -30,9 +37,8 @@ export default function Onglets() {
         options={{
           title: 'Zém Tarif',
           tabBarLabel: 'Estimer',
-          tabBarIcon: ({ focused, color }) => (
-            <Point focused={focused} color={typeof color === 'string' ? color : '#8A847B'} />
-          ),
+          headerShown: false,
+          tabBarIcon: ({ color }) => <IconeOnglet nom="map-pin" couleur={String(color ?? "#8A8A86")} />,
         }}
       />
       <Tabs.Screen
@@ -40,9 +46,7 @@ export default function Onglets() {
         options={{
           title: 'Historique',
           tabBarLabel: 'Historique',
-          tabBarIcon: ({ focused, color }) => (
-            <Point focused={focused} color={typeof color === 'string' ? color : '#8A847B'} />
-          ),
+          tabBarIcon: ({ color }) => <IconeOnglet nom="clock" couleur={String(color ?? "#8A8A86")} />,
         }}
       />
       <Tabs.Screen
@@ -50,41 +54,28 @@ export default function Onglets() {
         options={{
           title: 'La méthode',
           tabBarLabel: 'Méthode',
-          tabBarIcon: ({ focused, color }) => (
-            <Point focused={focused} color={typeof color === 'string' ? color : '#8A847B'} />
-          ),
+          tabBarIcon: ({ color }) => <IconeOnglet nom="info" couleur={String(color ?? "#8A8A86")} />,
         }}
       />
     </Tabs>
   );
 }
 
-function Point({ focused, color }: { focused: boolean; color: string }) {
-  return (
-    <View
-      style={[
-        styles.point,
-        { backgroundColor: focused ? couleurs.or : color, opacity: focused ? 1 : 0.45 },
-      ]}
-    />
-  );
+function IconeOnglet({ nom, couleur }: { nom: NomIcone; couleur: string }) {
+  return <Icone nom={nom} taille={20} couleur={typeof couleur === 'string' ? couleur : couleurs.muet} />;
 }
 
 const styles = StyleSheet.create({
   barre: {
-    backgroundColor: couleurs.papier,
+    backgroundColor: couleurs.surface,
     borderTopColor: couleurs.ligne,
     borderTopWidth: 1,
-    height: 62,
+    height: 64,
+    paddingTop: 6,
   },
   label: {
-    fontFamily: typo.sansMoyen,
-    fontSize: 12,
-  },
-  point: {
-    width: 8,
-    height: 8,
-    borderRadius: 8,
-    marginTop: 6,
+    fontFamily: typo.medium,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
 });

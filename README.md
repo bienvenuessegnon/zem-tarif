@@ -10,8 +10,9 @@ Ce n’est pas un prix imposé, et ce n’est pas GoZem ni Yango.
 
 ## Fonctions
 
+- Carte en plein écran, avec une feuille du bas pour le départ, l’arrivée et le résultat.
 - Recherche d’un départ et d’une arrivée (repères habituels, ou OpenStreetMap via Nominatim).
-- Carte OpenStreetMap et itinéraire routier (OSRM). Si le calcul d’itinéraire échoue, la distance à vol d’oiseau est majorée de 25 %.
+- Itinéraire routier (OSRM). Si le calcul d’itinéraire échoue, la distance à vol d’oiseau est majorée de 25 %.
 - Fourchette en francs CFA, avec la distance et une durée indicative.
 - Majoration de nuit (22 h – 6 h, heure de Porto-Novo) et option « pluie ou voie dégradée ».
 - Signalement du prix payé, conservé sur l’appareil.
@@ -23,8 +24,10 @@ Un petit serveur FastAPI, facultatif, permet de rassembler les avis. Un schéma 
 
 ## Le barème
 
+Tous les coefficients tiennent dans `src/pricing/constantes.ts`. C’est le seul fichier à modifier si de nouveaux prix de terrain sont fournis.
+
 ```
-prix = max(200 F, 100 F + 60 F × km)
+prix = max(250 F, 150 F + 65 F × km)
 puis, le cas échéant :
   × 1,25 la nuit (22 h – 6 h)
   × 1,30 s’il pleut ou si la voie est très dégradée
@@ -34,38 +37,50 @@ fourchette affichée : 85 % – 130 % du point central
 
 Dès que trois avis d’usagers relient à peu près les mêmes deux points (dans un rayon d’un kilomètre à chaque bout), le point central glisse vers leur médiane, jusqu’à 65 % du poids. Les repères publiés ci-dessous ne sont pas des avis d’usagers et n’entrent pas dans ce mélange.
 
-Les distances de calage ont été mesurées avec OSRM (profil routier) en novembre 2026.
+Les distances de calage ont été mesurées avec OSRM (profil routier). Le barème a été recalibré en novembre 2026, après la hausse du carburant officiel à 725 F le litre (1er mai 2026) et des témoignages plus récents sur les courses courtes.
+
+Exemples, de jour et par temps sec :
+
+| Trajet | Distance (ordre de grandeur) | Point central |
+|---|---|---|
+| Haie Vive – Cadjèhoun | ~2,4 km | 300 F (fourchette 250 – 400 F) |
+| Haie Vive – Ganhi | ~5,3 km | 500 F (fourchette 400 – 650 F) |
+| Fidjrossè – Akpakpa | ~11,7 km | 900 F (fourchette 750 – 1 200 F) |
+| Vers Calavi, ~16 km | ~16 km | 1 200 F (fourchette 1 000 – 1 550 F) |
 
 ### D’où viennent les chiffres
 
-Il n’y a pas de série statistique récente, trajet par trajet. Le barème a été calé pour rester dans les fourchettes publiées, en tenant compte de la hausse du carburant depuis 2019. Les sources principales :
+Il n’y a pas de série statistique récente, trajet par trajet. Le barème a été calé pour rester dans les fourchettes publiées en 2025–2026. Les sources principales :
 
 | Trajet ou ordre de grandeur | Fourchette | Année | Source |
 |---|---|---|---|
-| Minimum de la course | 100 F | 2017 | [franceinfo](https://www.franceinfo.fr/monde/afrique/societe-africaine/au-benin-l-uberisation-touche-desormais-les-moto-taxis_3059165.html), [Wikipedia](https://en.wikipedia.org/wiki/Zemidjan) |
-| Court trajet à Cotonou, 0 à 3 km | 100 – 250 F | 2019 | [SSATP / Banque mondiale](https://www.ssatp.org/sites/default/files/publication/Country-Assesment-report-Benin-En.pdf), *Policies for sustainable mobility and accessibility in cities of Benin*, octobre 2019, p. 40 |
-| Calavi – Cotonou, 15 à 20 km | 500 – 1 000 F | 2019 | même rapport SSATP, p. 40 |
-| Course moyenne, pouvant aller jusqu’au triple | 300 F en moyenne, jusqu’à 900 F | 2019 | [Ouest-Afrique](https://ouest-afrique.com/cotonou-face-a-la-penurie-de-transports-publics/) (Max-Savi Carmel, d’après *New African*) |
-| Petit trajet typique | 100 – 1 000 F | 2024 | [Le Petit Journal Cotonou](https://lepetitjournal.com/cotonou/zem-les-taxis-moto-du-benin-299763) (Julie Ducos, mise à jour du 8 décembre 2024) |
-| Trajet intra-urbain de moins de 10 km | 200 – 1 500 F | 2026 | [Parlons Fongbé](https://parlons-fongbe.com/en/motorcycle-taxis-and-car-taxis-in-benin/) (3 novembre 2026) |
+| Course courte, après la flambée du kpayo | 250 – 300 F | 2026 | [Ahouandjo, 12 novembre 2026](https://ahouandjo.com/article.php?slug=ahouandjo.com%2Fflambee-du-Kpayo-zemidjans-et-usagers-pris-au-piege-de-la-cherte) |
+| Court, moins de 10 min (après négociation) | 200 – 400 F | 2026 | [benin360.com, mai 2026](https://benin360.com/transport-cotonou-benin/) |
+| Moyen, 15 à 20 min, après négociation | 500 – 700 F | 2026 | même article |
+| Long, 30 min et plus, après négociation | 800 – 1 200 F | 2026 | même article |
 | Court, même quartier (ex. Haie Vive – Cadjèhoun, env. 2,4 km) | 200 – 300 F | 2026 | [icotonou.com](https://www.icotonou.com/en/installation/riding-zemidjan-cotonou/) (14 septembre 2026) |
-| Moyen (ex. Haie Vive – Ganhi, env. 5,3 km) | 400 – 600 F | 2026 | même guide |
+| Moyen (ex. Haie Vive – Ganhi, env. 5,3 km) | 400 – 700 F | 2026 | même guide |
 | Long, traversée de ville (ex. Fidjrossè – Akpakpa, env. 11,7 km) | 700 – 1 000 F | 2026 | même guide |
 | Cotonou centre – débarcadère d’Abomey-Calavi | 1 000 – 1 500 F | 2026 | même guide |
+| Trajet intra-urbain de moins de 10 km | 200 – 1 500 F | 2026 | [Parlons Fongbé](https://parlons-fongbe.com/en/motorcycle-taxis-and-car-taxis-in-benin/) (3 novembre 2026) |
+| Gozem Zem, courses en ville observées | typiquement 300 – 800 F, parfois jusqu’à 1 200 F | 2026 | [benin360](https://benin360.com/transport-cotonou-benin/) et [icotonou.com, 23 juillet 2026](https://www.icotonou.com/en/articles/ride-hailing-apps-cotonou/) |
+| Petit trajet typique | 100 – 1 000 F | 2024 | [Le Petit Journal Cotonou](https://lepetitjournal.com/cotonou/zem-les-taxis-moto-du-benin-299763) (Julie Ducos, 8 décembre 2024) |
+| Court trajet à Cotonou, 0 à 3 km | 100 – 250 F | 2019 | [SSATP / Banque mondiale](https://www.ssatp.org/sites/default/files/publication/Country-Assesment-report-Benin-En.pdf), octobre 2019, p. 40 |
+| Calavi – Cotonou, 15 à 20 km | 500 – 1 000 F | 2019 | même rapport SSATP, p. 40 |
+| Course moyenne, pouvant aller jusqu’au triple | 300 F en moyenne, jusqu’à 900 F | 2019 | [Ouest-Afrique](https://ouest-afrique.com/cotonou-face-a-la-penurie-de-transports-publics/) (Max-Savi Carmel, d’après *New African*) |
+| Minimum historique de la course | 100 F | 2017 | [franceinfo](https://www.franceinfo.fr/monde/afrique/societe-africaine/au-benin-l-uberisation-touche-desormais-les-moto-taxis_3059165.html), [Wikipedia](https://en.wikipedia.org/wiki/Zemidjan) |
 
-Le rapport SSATP de 2019 est la source la plus solide, mais elle a sept ans. Les guides de 2026 donnent des ordres de grandeur plus à jour, sans être des enquêtes de terrain contrôlées. Le barème se situe entre les deux : plus élevé que les fourchettes de 2019, cohérent avec la hausse du carburant, et un peu prudent par rapport aux milieux de fourchette des guides récents.
+Le rapport SSATP de 2019 reste la source la plus solide, mais elle a sept ans. Les guides et articles de 2026 donnent des ordres de grandeur plus à jour, sans être des enquêtes de terrain contrôlées. Le barème se situe dans ces fourchettes récentes : 250 F de plancher (plutôt que le minimum historique de 100 F), 500 F pour Haie Vive–Ganhi, autour de 900 F pour une traversée de ville.
 
-Avec ce barème, un trajet de 5,3 km (Haie Vive – Ganhi) tombe autour de 400 F le jour, par temps sec ; 11,7 km (Fidjrossè – Akpakpa) autour de 800 F ; 14 à 16 km vers Calavi autour de 1 000 F.
+La grille officielle [Yango Moto à Cotonou](https://yango.com/cotonou/tariff/moto/) (valable jusqu’au 17 novembre 2026) affiche un minimum de 85 F, comprenant 5 minutes et 2 km, puis au plus 18 F/km et 8 F/min en ville. C’est un plafond de plateforme, très en dessous des prix de rue : elle est documentée comme point de comparaison, et n’a pas servi à baisser le barème. Gozem Zem, tel qu’observé dans les guides, est un meilleur point de référence pour une moto commandée, sans être une grille de zém de rue.
 
 ### Nuit, pluie, carburant
 
-- **Nuit.** Le guide icotonou.com (2026) indique environ +20 à 30 % après 22 h. Le modèle prend 1,25. D’autres récits parlent d’une hausse plus forte, parfois jusqu’à un doublement : la fourchette haute en absorbe une partie, sans aller jusque-là.
+- **Nuit.** Le guide icotonou.com (2026) indique environ +20 à 30 % après 22 h. Le modèle prend 1,25. D’autres récits parlent d’une hausse plus forte, parfois jusqu’à un doublement (benin360, mai 2026) : la fourchette haute en absorbe une partie, sans aller jusque-là.
 - **Pluie.** En juillet 2014, *La Nouvelle Tribune* rapportait un trajet habituel à 400 F payé 600 F sous la pluie, sur une voie dégradée à Agla. Le coefficient 1,30 reste en deçà de ce témoignage.
-- **Carburant.** Le rapport SSATP citait environ 535 F le litre à la pompe en 2019. Le tarif officiel était de 695 F en 2025, puis 725 F à compter du 1er mai 2026 ([RFI](https://www.rfi.fr/fr/afrique/20260502-b%C3%A9nin-les-prix-du-carburant-%C3%A0-la-pompe-revus-%C3%A0-la-hausse-depuis-le-1er-mai), [La Marina BJ](https://lamarina.bj/2026/04/30/carburant-au-benin-le-prix-a-la-pompe-fixe-a-725-fcfa-des-le-1er-mai/)). Beaucoup de conducteurs s’approvisionnent toutefois en essence informelle (« kpayo »). Il n’existe pas d’indexation automatique des courses.
+- **Carburant.** Le rapport SSATP citait environ 535 F le litre à la pompe en 2019. Le tarif officiel était de 695 F en 2025, puis 725 F à compter du 1er mai 2026 ([RFI](https://www.rfi.fr/fr/afrique/20260502-b%C3%A9nin-les-prix-du-carburant-%C3%A0-la-pompe-revus-%C3%A0-la-hausse-depuis-le-1er-mai), [La Marina BJ](https://lamarina.bj/2026/04/30/carburant-au-benin-le-prix-a-la-pompe-fixe-a-725-fcfa-des-le-1er-mai/)). Beaucoup de conducteurs s’approvisionnent toutefois en essence informelle (« kpayo »), dont le prix est instable : [Ahouandjo, 12 novembre 2026](https://ahouandjo.com/article.php?slug=ahouandjo.com%2Fflambee-du-Kpayo-zemidjans-et-usagers-pris-au-piege-de-la-cherte) cite 1 000 à 1 200 F le litre à certains points, et des courses courtes passées de 200–250 F à 250–300 F. Il n’existe pas d’indexation automatique des courses.
 
 Aucune grille municipale de prix au kilomètre n’a été trouvée. La mairie de Cotonou prélève une taxe annuelle d’exploitation (4 800 F pour un deux-roues en 2024, d’après *La Nouvelle Tribune*), ce qui n’est pas un tarif de course.
-
-Les tarifs GoZem ou Yango (voiture ou moto commandée dans une application) n’entrent pas dans le modèle : c’est un autre service, avec un prix affiché à l’avance.
 
 ## Limites
 
@@ -74,6 +89,10 @@ Les tarifs GoZem ou Yango (voiture ou moto commandée dans une application) n’
 - La durée affichée vient d’OSRM. Elle est souvent optimiste aux heures de pointe.
 - Au-delà d’une vingtaine de kilomètres, un taxi collectif est souvent plus économique. Cotonou–Porto-Novo se situe autour de 1 500 F en taxi partagé, selon Parlons Fongbé.
 - Sans avis d’usagers sur un trajet, l’estimation reste celle du barème de base.
+
+## Identité visuelle
+
+La marque est un monogramme « Z » géométrique, or sur carré noir arrondi (`assets/logo/`). La palette est noire et or (encre `#111111`, or `#F3B409`, fond `#F4F4F2`), avec Plus Jakarta Sans. Les icônes viennent de Feather (`@expo/vector-icons`), au même trait.
 
 ## Lancer l’application
 
@@ -92,7 +111,7 @@ Sur un téléphone Android, installer [Expo Go](https://expo.dev/go), puis :
 npm start
 ```
 
-Scanner le QR code affiché. L’application demande la position uniquement si l’on choisit « Utiliser ma position ».
+Scanner le QR code affiché. L’application demande la position uniquement si l’on choisit d’utiliser sa position.
 
 ### Démo web statique
 
@@ -134,10 +153,13 @@ Le fichier `backend/schema.sql` reprend la même structure pour Supabase.
 
 ## Captures
 
-- [docs/estimer.png](docs/estimer.png) — écran d’estimation
+- [docs/estimer.png](docs/estimer.png) — écran d’estimation, carte et feuille du bas
 - [docs/detail.png](docs/detail.png) — détail du calcul
 - [docs/methode.png](docs/methode.png) — sources et limites
 - [docs/historique.png](docs/historique.png) — historique
+- [docs/signaler.png](docs/signaler.png) — signaler un prix payé
+
+Une planche d’identité (logo, palette, écrans) figure aussi dans le dépôt de travail.
 
 ## Technique
 
@@ -145,6 +167,7 @@ Le fichier `backend/schema.sql` reprend la même structure pour Supabase.
 - Le calcul du prix est isolé dans `src/pricing/`, sans dépendance à React, et testé avec Jest.
 - Cartes : tuiles OpenStreetMap, via Leaflet.
 - Stockage local : AsyncStorage.
+- Typographie : Plus Jakarta Sans (SIL Open Font License).
 - Fuseau horaire utilisé pour la nuit : Africa/Porto-Novo.
 
 Nominatim est interrogé au plus une fois par seconde, avec un identifiant de contact, conformément à [sa politique d’usage](https://operations.osmfoundation.org/policies/nominatim/). Les cartes portent la mention © les contributeurs d’OpenStreetMap.

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
+import { Icone } from '@/components/Icone';
 import { formatDuree, formatFcfa, formatKm } from '@/src/pricing/format';
 import {
   lireHistorique,
@@ -12,6 +13,7 @@ import type { Signalement } from '@/src/pricing/types';
 import { lireSignalements } from '@/src/storage/signalements';
 import { couleurs } from '@/src/theme/colors';
 import { typo } from '@/src/theme/typo';
+import { ombreLegere, rayon } from '@/src/theme/espace';
 
 export default function EcranHistorique() {
   const [historique, setHistorique] = useState<EntreeHistorique[]>([]);
@@ -45,10 +47,13 @@ export default function EcranHistorique() {
 
       <Text style={styles.titre}>Prix signalés</Text>
       {avis.length === 0 ? (
-        <Text style={styles.vide}>Aucun prix signalé pour le moment.</Text>
+        <EtatVide
+          icone="tag"
+          texte="Aucun prix signalé pour le moment. Après une course, indiquez le montant convenu."
+        />
       ) : (
         avis.map((s) => (
-          <View key={s.id} style={styles.carte}>
+          <View key={s.id} style={[styles.carte, ombreLegere]}>
             <Text style={styles.trajet}>
               {s.originLabel} → {s.destLabel}
             </Text>
@@ -66,11 +71,14 @@ export default function EcranHistorique() {
 
       <Text style={[styles.titre, styles.titreSuite]}>Estimations récentes</Text>
       {historique.length === 0 ? (
-        <Text style={styles.vide}>Aucune estimation enregistrée.</Text>
+        <EtatVide
+          icone="clock"
+          texte="Aucune estimation enregistrée. Sur l’écran Estimer, appuyez sur Garder."
+        />
       ) : (
         <>
           {historique.map((e) => (
-            <View key={e.id} style={styles.carte}>
+            <View key={e.id} style={[styles.carte, ombreLegere]}>
               <Text style={styles.trajet}>
                 {e.origin.label} → {e.dest.label}
               </Text>
@@ -95,6 +103,17 @@ export default function EcranHistorique() {
   );
 }
 
+function EtatVide({ icone, texte }: { icone: 'tag' | 'clock'; texte: string }) {
+  return (
+    <View style={styles.videBloc}>
+      <View style={styles.videIcone}>
+        <Icone nom={icone} taille={18} couleur={couleurs.muet} />
+      </View>
+      <Text style={styles.vide}>{texte}</Text>
+    </View>
+  );
+}
+
 function formaterDate(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
@@ -108,36 +127,45 @@ function formaterDate(iso: string): string {
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: couleurs.papier },
+  page: { flex: 1, backgroundColor: couleurs.fond },
   contenu: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 100 },
   intro: {
-    fontFamily: typo.sans,
+    fontFamily: typo.regular,
     fontSize: 15,
     lineHeight: 22,
-    color: couleurs.secondaire,
+    color: couleurs.encreDouce,
     marginBottom: 24,
   },
   titre: {
-    fontFamily: typo.serifMoyen,
-    fontSize: 22,
+    fontFamily: typo.semi,
+    fontSize: 20,
     color: couleurs.encre,
     marginBottom: 12,
   },
   titreSuite: { marginTop: 28 },
-  vide: { fontFamily: typo.sans, fontSize: 14, color: couleurs.muet, marginBottom: 8 },
-  carte: {
-    borderBottomWidth: 1,
-    borderBottomColor: couleurs.ligne,
-    paddingVertical: 14,
+  videBloc: { alignItems: 'flex-start', gap: 10, marginBottom: 8 },
+  videIcone: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: couleurs.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  trajet: { fontFamily: typo.sansMoyen, fontSize: 16, color: couleurs.encre },
-  prix: { fontFamily: typo.serifMoyen, fontSize: 20, color: couleurs.encre, marginTop: 4 },
-  meta: { fontFamily: typo.sans, fontSize: 13, color: couleurs.secondaire, marginTop: 4 },
-  vider: { marginTop: 20, alignSelf: 'flex-start' },
+  vide: { fontFamily: typo.regular, fontSize: 14, color: couleurs.muet, lineHeight: 20 },
+  carte: {
+    backgroundColor: couleurs.surface,
+    borderRadius: rayon.md,
+    padding: 16,
+    marginBottom: 10,
+  },
+  trajet: { fontFamily: typo.medium, fontSize: 15, color: couleurs.encre },
+  prix: { fontFamily: typo.bold, fontSize: 22, color: couleurs.encre, marginTop: 6, letterSpacing: -0.4 },
+  meta: { fontFamily: typo.regular, fontSize: 13, color: couleurs.muet, marginTop: 6 },
+  vider: { marginTop: 12, alignSelf: 'flex-start' },
   viderTexte: {
-    fontFamily: typo.sans,
+    fontFamily: typo.medium,
     fontSize: 14,
     color: couleurs.alerte,
-    textDecorationLine: 'underline',
   },
 });
