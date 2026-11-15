@@ -46,7 +46,11 @@ export async function calculerItineraire(
   destLat: number,
   destLon: number,
   signal?: AbortSignal,
+  horsLigne = false,
 ): Promise<Itineraire> {
+  if (horsLigne) {
+    return itineraireVolOiseau(originLat, originLon, destLat, destLon);
+  }
   const url = `${OSRM}/${originLon},${originLat};${destLon},${destLat}?overview=full&geometries=geojson`;
   try {
     const reponse = await fetch(url, {

@@ -40,7 +40,7 @@ export function useProfil(): Contexte {
   const ctx = useContext(Ctx);
   if (!ctx) {
     return {
-      profil: { pseudo: '', onboardingVu: true },
+      profil: { pseudo: '', onboardingVu: true, role: 'passager' },
       pret: false,
       rafraichir: async () => {},
       enregistrer: async () => {},

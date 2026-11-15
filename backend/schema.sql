@@ -32,3 +32,24 @@ create index if not exists idx_signalements_trajet
 
 create index if not exists idx_signalements_appareil
   on signalements (appareil_id, enregistre_le desc);
+
+alter table signalements add column if not exists role text default 'passager';
+alter table signalements add column if not exists bagage boolean not null default false;
+alter table signalements add column if not exists poids double precision not null default 1;
+alter table signalements add column if not exists prix_ref integer;
+
+create table if not exists appareils (
+  appareil_id text primary key,
+  score integer not null default 0,
+  nb integer not null default 0,
+  maj timestamptz not null default now()
+);
+
+create table if not exists suggestions_reperes (
+  id text primary key,
+  nom text not null,
+  detail text,
+  appareil_id text,
+  pseudo text,
+  enregistre_le timestamptz not null default now()
+);

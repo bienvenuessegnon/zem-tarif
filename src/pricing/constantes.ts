@@ -67,8 +67,8 @@ export const POIDS_MAX_SIGNALEMENTS = 0.65;
 /** Un signalement est « proche » si chaque extrémité est à moins de 1 km. */
 export const RAYON_PROCHE_M = 1000;
 
-/** Facteur de détour appliqué à la distance à vol d'oiseau si OSRM échoue. */
-export const FACTEUR_DETOUR = 1.25;
+/** Facteur de détour appliqué à la distance à vol d'oiseau hors ligne ou si OSRM échoue. Calibré à ~1,3. */
+export const FACTEUR_DETOUR = 1.3;
 
 /** Vitesse moyenne de repli, en km/h, pour estimer une durée sans OSRM. */
 export const VITESSE_REPLI_KMH = 25;

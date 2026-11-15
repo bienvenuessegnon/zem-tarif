@@ -18,6 +18,8 @@ from fastapi import FastAPI, Header, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, field_validator
 
+from fiabilite import mediane_ponderee, poids_signalement, score_fiabilite
+
 MAX_PRIX = 20_000
 MIN_PRIX = 50
 MAX_PAR_HEURE = 8
@@ -172,18 +174,74 @@ CREATE INDEX IF NOT EXISTS idx_signalements_appareil
 
 def assurer_colonnes_sqlite(cx: sqlite3.Connection) -> None:
     existantes = {r[1] for r in cx.execute("PRAGMA table_info(signalements)").fetchall()}
-    for nom, typ in (("heure", "INTEGER"), ("pseudo", "TEXT"), ("appareil_id", "TEXT")):
+    for nom, typ in (
+        ("heure", "INTEGER"),
+        ("pseudo", "TEXT"),
+        ("appareil_id", "TEXT"),
+        ("role", "TEXT"),
+        ("bagage", "INTEGER"),
+        ("poids", "REAL"),
+        ("prix_ref", "INTEGER"),
+    ):
         if nom not in existantes:
             cx.execute(f"ALTER TABLE signalements ADD COLUMN {nom} {typ}")
+
+
+DDL_APPAREILS_SQLITE = """
+CREATE TABLE IF NOT EXISTS appareils (
+  appareil_id TEXT PRIMARY KEY,
+  score INTEGER NOT NULL DEFAULT 0,
+  nb INTEGER NOT NULL DEFAULT 0,
+  maj TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS suggestions_reperes (
+  id TEXT PRIMARY KEY,
+  nom TEXT NOT NULL,
+  detail TEXT,
+  appareil_id TEXT,
+  pseudo TEXT,
+  enregistre_le TEXT NOT NULL
+);
+"""
+
+DDL_APPAREILS_POSTGRES = """
+CREATE TABLE IF NOT EXISTS appareils (
+  appareil_id TEXT PRIMARY KEY,
+  score INTEGER NOT NULL DEFAULT 0,
+  nb INTEGER NOT NULL DEFAULT 0,
+  maj TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE TABLE IF NOT EXISTS suggestions_reperes (
+  id TEXT PRIMARY KEY,
+  nom TEXT NOT NULL,
+  detail TEXT,
+  appareil_id TEXT,
+  pseudo TEXT,
+  enregistre_le TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+"""
+
+ALTER_POSTGRES = """
+ALTER TABLE signalements ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'passager';
+ALTER TABLE signalements ADD COLUMN IF NOT EXISTS bagage BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE signalements ADD COLUMN IF NOT EXISTS poids DOUBLE PRECISION NOT NULL DEFAULT 1;
+ALTER TABLE signalements ADD COLUMN IF NOT EXISTS prix_ref INTEGER;
+"""
 
 
 def init_db() -> None:
     with connexion() as cx:
         if EST_POSTGRES:
             cx.execute(DDL_POSTGRES)
+            for stmt in ALTER_POSTGRES.strip().split(";"):
+                s = stmt.strip()
+                if s:
+                    cx.execute(s)
+            cx.execute(DDL_APPAREILS_POSTGRES)
         else:
             cx.executescript(DDL_SQLITE)
             assurer_colonnes_sqlite(cx)
+            cx.executescript(DDL_APPAREILS_SQLITE)
 
 
 class SignalementIn(BaseModel):
@@ -203,6 +261,9 @@ class SignalementIn(BaseModel):
     appareilId: str | None = Field(default=None, max_length=80)
     enregistreLe: str
     source: str = "utilisateur"
+    role: str = "passager"
+    bagage: bool = False
+    prixRefFcfa: int | None = Field(default=None, ge=MIN_PRIX, le=MAX_PRIX)
 
     @field_validator("pseudo")
     @classmethod
@@ -216,6 +277,11 @@ class SignalementIn(BaseModel):
     @classmethod
     def nettoyer_label(cls, valeur: str) -> str:
         return " ".join(valeur.split()).strip()
+
+    @field_validator("role")
+    @classmethod
+    def nettoyer_role(cls, valeur: str) -> str:
+        return "conducteur" if valeur == "conducteur" else "passager"
 
 
 def ligne_vers_json(row: Any) -> dict[str, Any]:
@@ -236,6 +302,10 @@ def ligne_vers_json(row: Any) -> dict[str, Any]:
         "pseudo": d.get("pseudo") if not isinstance(d, sqlite3.Row) else d["pseudo"] if "pseudo" in d.keys() else None,
         "enregistreLe": str(d["enregistre_le"]),
         "source": d["source"],
+        "role": d.get("role") or "passager",
+        "bagage": bool(d.get("bagage") or False),
+        "poids": float(d.get("poids") or 1) if d.get("poids") is not None else 1.0,
+        "prixRefFcfa": d.get("prix_ref"),
     }
 
 
@@ -338,14 +408,16 @@ def creer(avis: SignalementIn, appareil_entete: str | None) -> dict[str, Any]:
                     429,
                     "Trop de signalements ont été envoyés depuis cet appareil. Réessayez plus tard.",
                 )
+        poids = poids_signalement(avis.prixPayeFcfa, avis.prixRefFcfa)
         exec_sql(
             cx,
             """
             INSERT INTO signalements (
               id, origin_lat, origin_lon, dest_lat, dest_lon,
               origin_label, dest_label, distance_m, prix_paye_fcfa,
-              nuit, pluie, heure, pseudo, appareil_id, enregistre_le, source
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              nuit, pluie, heure, pseudo, appareil_id, enregistre_le, source,
+              role, bagage, poids, prix_ref
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 avis.id,
@@ -364,10 +436,17 @@ def creer(avis: SignalementIn, appareil_entete: str | None) -> dict[str, Any]:
                 appareil,
                 avis.enregistreLe,
                 avis.source,
+                avis.role,
+                avis.bagage if EST_POSTGRES else int(avis.bagage),
+                poids,
+                avis.prixRefFcfa,
             ),
         )
+        if appareil and avis.source == "utilisateur":
+            maj_score_appareil(cx, appareil)
     sortie = avis.model_dump()
     sortie["appareilId"] = None
+    sortie["poids"] = poids_signalement(avis.prixPayeFcfa, avis.prixRefFcfa)
     return sortie
 
 
@@ -410,20 +489,23 @@ def statistiques(zone: str | None) -> list[dict[str, Any]]:
             prix_rows = exec_sql(
                 cx,
                 """
-                SELECT prix_paye_fcfa FROM signalements
+                SELECT prix_paye_fcfa, poids FROM signalements
                 WHERE source = 'utilisateur' AND origin_label = ? AND dest_label = ?
                 ORDER BY prix_paye_fcfa
                 """,
                 (origin, dest),
             ).fetchall()
-            prix = [int(val(p, "prix_paye_fcfa")) for p in prix_rows]
-            n = len(prix)
+            paires = [
+                (int(val(p, "prix_paye_fcfa")), float(val(p, "poids") or 1))
+                for p in prix_rows
+            ]
+            n = len(paires)
             if n == 0:
                 continue
-            mid = n // 2
-            mediane = prix[mid] if n % 2 else int(round((prix[mid - 1] + prix[mid]) / 2 / 50) * 50)
-            if n % 2:
-                mediane = int(round(prix[mid] / 50) * 50)
+            mediane_brute = mediane_ponderee(paires)
+            if mediane_brute is None:
+                continue
+            mediane = int(round(mediane_brute / 50) * 50)
             details.append(
                 {
                     "originLabel": origin,
@@ -440,8 +522,20 @@ def statistiques(zone: str | None) -> list[dict[str, Any]]:
 
 @app.get("/stats")
 @app.get("/api/stats")
-def stats(zone: str | None = Query(default=None)) -> dict[str, Any]:
+def stats(
+    zone: str | None = Query(default=None),
+    origin: str | None = Query(default=None),
+    dest: str | None = Query(default=None),
+) -> dict[str, Any]:
     trajets = statistiques(zone)
+    if origin and dest:
+        o = origin.casefold()
+        d = dest.casefold()
+        trajets = [
+            t
+            for t in trajets
+            if t["originLabel"].casefold() == o and t["destLabel"].casefold() == d
+        ]
     return {"trajets": trajets, "nbTrajets": len(trajets)}
 
 
@@ -468,3 +562,160 @@ def supprimer_signalement(
             (identifiant, x_device_id),
         )
     return {"statut": "ok"}
+
+def maj_score_appareil(cx: Any, appareil: str) -> dict[str, Any]:
+    rows = exec_sql(
+        cx,
+        """
+        SELECT prix_paye_fcfa, prix_ref FROM signalements
+        WHERE source = 'utilisateur' AND appareil_id = ?
+        ORDER BY enregistre_le
+        """,
+        (appareil,),
+    ).fetchall()
+    historique = [(int(val(r, "prix_paye_fcfa")), val(r, "prix_ref")) for r in rows]
+    bilan = score_fiabilite(historique)
+    maintenant = datetime.now(timezone.utc).isoformat()
+    if EST_POSTGRES:
+        exec_sql(
+            cx,
+            """
+            INSERT INTO appareils (appareil_id, score, nb, maj)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (appareil_id) DO UPDATE SET
+              score = EXCLUDED.score, nb = EXCLUDED.nb, maj = EXCLUDED.maj
+            """,
+            (appareil, bilan["score"], bilan["nb"], maintenant),
+        )
+    else:
+        exec_sql(
+            cx,
+            """
+            INSERT INTO appareils (appareil_id, score, nb, maj)
+            VALUES (?, ?, ?, ?)
+            ON CONFLICT (appareil_id) DO UPDATE SET
+              score = excluded.score, nb = excluded.nb, maj = excluded.maj
+            """,
+            (appareil, bilan["score"], bilan["nb"], maintenant),
+        )
+    return bilan
+
+
+def lire_fiabilite(appareil: str) -> dict[str, Any]:
+    with connexion() as cx:
+        row = exec_sql(
+            cx, "SELECT score, nb FROM appareils WHERE appareil_id = ?", (appareil,)
+        ).fetchone()
+        if row:
+            score = int(val(row, "score"))
+            nb = int(val(row, "nb"))
+            from fiabilite import libelle_fiabilite
+
+            return {"score": score, "nb": nb, "libelle": libelle_fiabilite(score, nb)}
+        # Recalcul au cas où la table n'est pas encore remplie
+        return maj_score_appareil(cx, appareil)
+
+
+@app.get("/fiabilite")
+@app.get("/api/fiabilite")
+def fiabilite_appareil(
+    x_device_id: str | None = Header(default=None, alias="X-Device-Id"),
+) -> dict[str, Any]:
+    if not x_device_id:
+        raise HTTPException(401, "en-tête X-Device-Id requis")
+    return lire_fiabilite(x_device_id.strip())
+
+
+class SuggestionIn(BaseModel):
+    id: str
+    nom: str = Field(min_length=2, max_length=120)
+    detail: str | None = Field(default=None, max_length=200)
+    enregistreLe: str | None = None
+    pseudo: str | None = Field(default=None, max_length=PSEUDO_MAX)
+
+    @field_validator("nom", "detail")
+    @classmethod
+    def nettoyer_texte(cls, valeur: str | None) -> str | None:
+        if valeur is None:
+            return None
+        texte = " ".join(valeur.split()).strip()
+        return texte or None
+
+
+@app.post("/suggestions", status_code=201)
+@app.post("/api/suggestions", status_code=201)
+def creer_suggestion(
+    avis: SuggestionIn,
+    x_device_id: str | None = Header(default=None, alias="X-Device-Id"),
+) -> dict[str, Any]:
+    if not avis.nom:
+        raise HTTPException(400, "nom requis")
+    maintenant = avis.enregistreLe or datetime.now(timezone.utc).isoformat()
+    with connexion() as cx:
+        existant = exec_sql(
+            cx, "SELECT id FROM suggestions_reperes WHERE id = ?", (avis.id,)
+        ).fetchone()
+        if existant:
+            raise HTTPException(409, "cette suggestion existe déjà")
+        exec_sql(
+            cx,
+            """
+            INSERT INTO suggestions_reperes (id, nom, detail, appareil_id, pseudo, enregistre_le)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (avis.id, avis.nom, avis.detail, x_device_id, avis.pseudo, maintenant),
+        )
+    return {"statut": "ok", "id": avis.id}
+
+
+@app.get("/zones-demandees")
+@app.get("/api/zones-demandees")
+def zones_demandees() -> dict[str, Any]:
+    """Agrège les départs récemment signalés. Liste vide s'il n'y a pas assez de données."""
+    with connexion() as cx:
+        if EST_POSTGRES:
+            rows = exec_sql(
+                cx,
+                """
+                SELECT origin_label AS label,
+                       AVG(origin_lat) AS lat,
+                       AVG(origin_lon) AS lon,
+                       COUNT(*) AS n
+                FROM signalements
+                WHERE source = 'utilisateur'
+                  AND enregistre_le >= NOW() - INTERVAL '7 days'
+                GROUP BY origin_label
+                HAVING COUNT(*) >= 3
+                ORDER BY n DESC
+                LIMIT 12
+                """,
+            ).fetchall()
+        else:
+            depuis = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
+            rows = exec_sql(
+                cx,
+                """
+                SELECT origin_label AS label,
+                       AVG(origin_lat) AS lat,
+                       AVG(origin_lon) AS lon,
+                       COUNT(*) AS n
+                FROM signalements
+                WHERE source = 'utilisateur' AND enregistre_le >= ?
+                GROUP BY origin_label
+                HAVING COUNT(*) >= 3
+                ORDER BY n DESC
+                LIMIT 12
+                """,
+                (depuis,),
+            ).fetchall()
+    zones = [
+        {
+            "label": val(r, "label"),
+            "lat": float(val(r, "lat") or 0),
+            "lon": float(val(r, "lon") or 0),
+            "nb": int(val(r, "n")),
+        }
+        for r in rows
+    ]
+    return {"zones": zones, "nb": len(zones)}
+

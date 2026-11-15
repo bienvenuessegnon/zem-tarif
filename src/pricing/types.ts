@@ -37,6 +37,10 @@ export type Signalement = {
   heure?: number | null;
   pseudo?: string | null;
   appareilId?: string | null;
+  role?: 'passager' | 'conducteur';
+  bagage?: boolean;
+  prixRefFcfa?: number | null;
+  poids?: number;
 };
 
 export type DemandeEstimation = {

@@ -233,7 +233,7 @@ describe('géographie', () => {
     const iti = itineraireVolOiseau(6.3545898, 2.3942784, 6.3547621, 2.4381045);
     const vol = haversineM(6.3545898, 2.3942784, 6.3547621, 2.4381045);
     expect(iti.source).toBe('vol-oiseau');
-    expect(iti.distanceM / vol).toBeCloseTo(1.25, 8);
+    expect(iti.distanceM / vol).toBeCloseTo(1.3, 8);
     expect(iti.dureeS).toBeGreaterThan(0);
   });
 
