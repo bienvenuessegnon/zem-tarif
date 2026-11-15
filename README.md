@@ -145,6 +145,8 @@ eas build --platform android --profile preview      # APK
 eas build --platform android --profile production   # AAB
 ```
 
+Un APK de la version 1.0.0, pour installation directe, est disponible ici : [zem-tarif-1.0.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.0.0/zem-tarif-1.0.0.apk) (page de la version : [v1.0.0](https://github.com/bienvenuessegnon/zem-tarif/releases/tag/v1.0.0)). Ce fichier a été signé localement avec le keystore de débogage ; il convient à un essai sur un téléphone, pas à une mise en ligne sur le Play Store (qui exige un AAB et une clé de production).
+
 On peut aussi construire un APK en local, après avoir installé un JDK 17 et le SDK Android, avec `npx expo prebuild --platform android` puis `cd android && ./gradlew assembleRelease`.
 
 Pour publier sur le Play Store :
