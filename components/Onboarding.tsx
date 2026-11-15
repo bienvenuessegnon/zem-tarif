@@ -14,7 +14,7 @@ const DIAPOS: { titre: string; texte: string; icone: NomIcone }[] = [
   {
     titre: 'Estimer',
     icone: 'map-pin',
-    texte: 'Indiquez un départ et une arrivée. Zém Tarif calcule une fourchette raisonnable, en francs CFA, selon la distance, l’heure et la pluie.',
+    texte: 'Indiquez un départ et une arrivée. Zém Tarif calcule une fourchette raisonnable, en francs CFA, selon la distance, l’heure et la pluie. Vous pouvez ensuite montrer le prix en grand au conducteur.',
   },
   {
     titre: 'Signaler',

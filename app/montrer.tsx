@@ -1,15 +1,18 @@
 import { useEffect } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Icone } from '@/components/Icone';
 import { lireBrouillon } from '@/src/contenu/brouillon';
-import { formatFcfa, formatKm } from '@/src/pricing/format';
+import { formatFcfa } from '@/src/pricing/format';
 import { typo } from '@/src/theme/typo';
 
 export default function EcranMontrer() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const brouillon = lireBrouillon();
 
   useEffect(() => {
@@ -23,30 +26,47 @@ export default function EcranMontrer() {
     return (
       <View style={styles.page}>
         <StatusBar style="light" />
-        <Text style={styles.meta}>Estimez d’abord une course.</Text>
-        <Pressable onPress={() => router.back()}>
-          <Text style={styles.fermer}>Fermer</Text>
+        <Pressable
+          onPress={() => router.back()}
+          style={[styles.fermer, { top: Math.max(insets.top, 12) }]}
+          accessibilityLabel="Fermer"
+        >
+          <Icone nom="x" taille={28} couleur="#F3B409" />
         </Pressable>
       </View>
     );
   }
 
+  const { point, bas, haut } = brouillon.estimation;
+
   return (
     <View style={styles.page}>
       <StatusBar style="light" />
-      <Text style={styles.marque}>Zém Tarif</Text>
-      <Text style={styles.prix}>{formatFcfa(brouillon.estimation.point)}</Text>
-      <Text style={styles.meta}>
-        {formatFcfa(brouillon.estimation.bas)} – {formatFcfa(brouillon.estimation.haut)}
-      </Text>
-      <Text style={styles.trajet}>
-        {brouillon.origin.label} → {brouillon.dest.label}
-      </Text>
-      <Text style={styles.meta}>{formatKm(brouillon.distanceM / 1000)}</Text>
-      <Text style={styles.note}>Prix de référence, à convenir ensemble.</Text>
-      <Pressable onPress={() => router.back()} style={styles.bouton}>
-        <Text style={styles.fermer}>Fermer</Text>
+      <Pressable
+        onPress={() => router.back()}
+        style={[styles.fermer, { top: Math.max(insets.top, 12) }]}
+        accessibilityLabel="Fermer"
+      >
+        <Icone nom="x" taille={28} couleur="#F3B409" />
       </Pressable>
+
+      <Image
+        source={require('../assets/logo/marque-192.png')}
+        style={styles.icone}
+        accessibilityLabel="Zém Tarif"
+      />
+      <Text
+        style={styles.prix}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.5}
+        accessibilityLabel={formatFcfa(point)}
+      >
+        {formatFcfa(point)}
+      </Text>
+      <Text style={styles.fourchette} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7}>
+        {formatFcfa(bas)} – {formatFcfa(haut)}
+      </Text>
     </View>
   );
 }
@@ -57,20 +77,33 @@ const styles = StyleSheet.create({
     backgroundColor: '#111111',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 24,
+    paddingHorizontal: 16,
   },
-  marque: { fontFamily: typo.bold, fontSize: 16, color: '#F3B409', marginBottom: 24 },
-  prix: { fontFamily: typo.bold, fontSize: 96, color: '#F3B409', letterSpacing: -3, textAlign: 'center' },
-  meta: { fontFamily: typo.medium, fontSize: 18, color: '#C8C8C4', marginTop: 8, textAlign: 'center' },
-  trajet: {
-    fontFamily: typo.semi,
-    fontSize: 22,
-    color: '#FFFFFF',
-    marginTop: 28,
+  fermer: {
+    position: 'absolute',
+    right: 16,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  icone: { width: 88, height: 88, borderRadius: 20, marginBottom: 36 },
+  prix: {
+    fontFamily: typo.bold,
+    fontSize: 120,
+    color: '#F3B409',
+    letterSpacing: -4,
     textAlign: 'center',
-    lineHeight: 30,
+    width: '100%',
   },
-  note: { fontFamily: typo.regular, fontSize: 14, color: '#8A8A86', marginTop: 28, textAlign: 'center' },
-  bouton: { marginTop: 40, padding: 12 },
-  fermer: { fontFamily: typo.semi, fontSize: 16, color: '#F3B409' },
+  fourchette: {
+    fontFamily: typo.semi,
+    fontSize: 36,
+    color: '#FFFFFF',
+    marginTop: 16,
+    textAlign: 'center',
+    width: '100%',
+  },
 });

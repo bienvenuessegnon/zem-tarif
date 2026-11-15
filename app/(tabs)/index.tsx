@@ -331,6 +331,10 @@ export default function EcranAccueil() {
               preparerBrouillon();
               router.push('/partage');
             }}
+            onMontrer={() => {
+              preparerBrouillon();
+              router.push('/montrer');
+            }}
             onSignaler={() => void garderEtSignaler()}
             onPluie={() => setPluie((v) => !v)}
             pluie={pluie}
@@ -507,6 +511,7 @@ function VueReference({
   onRetour,
   onFavori,
   onPartager,
+  onMontrer,
   onSignaler,
   onPluie,
   pluie,
@@ -523,6 +528,7 @@ function VueReference({
   onRetour: () => void;
   onFavori: () => void;
   onPartager: () => void;
+  onMontrer: () => void;
   onSignaler: () => void;
   onPluie: () => void;
   pluie: boolean;
@@ -594,12 +600,15 @@ function VueReference({
         </Text>
       ) : null}
 
+      <View style={{ marginTop: 12 }}>
+        <Bouton titre="Montrer au zém" onPress={onMontrer} />
+      </View>
       <View style={styles.boutons}>
         <View style={{ flex: 1 }}>
           <Bouton titre="Partager" variante="contour" onPress={onPartager} />
         </View>
         <View style={{ flex: 1 }}>
-          <Bouton titre="J’ai payé" onPress={onSignaler} />
+          <Bouton titre="J’ai payé" variante="contour" onPress={onSignaler} />
         </View>
       </View>
       <Pressable onPress={onPluie} style={styles.pluie}>
