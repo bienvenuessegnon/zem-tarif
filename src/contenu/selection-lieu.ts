@@ -4,20 +4,21 @@ export type CibleLieu = 'depart' | 'arrivee';
 
 type Ecouteur = (lieu: Lieu, cible: CibleLieu) => void;
 
-let ecouteur: Ecouteur | null = null;
+const pile: Ecouteur[] = [];
 
 export type TrajetInitial = { origin: Lieu; dest: Lieu };
 let initial: TrajetInitial | null = null;
 
 export function onSelectionLieu(cb: Ecouteur): () => void {
-  ecouteur = cb;
+  pile.push(cb);
   return () => {
-    if (ecouteur === cb) ecouteur = null;
+    const i = pile.lastIndexOf(cb);
+    if (i >= 0) pile.splice(i, 1);
   };
 }
 
 export function choisirLieu(lieu: Lieu, cible: CibleLieu): void {
-  ecouteur?.(lieu, cible);
+  pile[pile.length - 1]?.(lieu, cible);
 }
 
 export function poserTrajetInitial(valeur: TrajetInitial): void {
