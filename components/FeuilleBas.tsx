@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from 'react';
 import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -63,6 +64,7 @@ export const FeuilleBas = forwardRef<CommandeFeuille, Props>(function FeuilleBas
   { entete, children, onIndex, onHauteurStabilisee },
   ref,
 ) {
+  const insets = useSafeAreaInsets();
   const [index, setIndex] = useState<IndexFeuille>(0);
   const [mesure, setMesure] = useState({ h: 0, pts: [0, 0, 0] });
   const onIndexRef = useRef(onIndex);
@@ -119,9 +121,9 @@ export const FeuilleBas = forwardRef<CommandeFeuille, Props>(function FeuilleBas
     'worklet';
     const pts = points.value;
     if (pts[2] <= 0) return;
-    const auMax = hauteur.value >= pts[2] - 6;
-    if (auMax && scrollY.value > 2 && translationY < 0) return;
-    if (auMax && scrollY.value > 2 && translationY > 0) return;
+    const peutDefiler = hauteur.value >= pts[1] - 6;
+    if (peutDefiler && scrollY.value > 2 && translationY < 0) return;
+    if (peutDefiler && scrollY.value > 2 && translationY > 0) return;
     const suivante = debut.value - translationY;
     const min = pts[0];
     const max = pts[2];
@@ -195,7 +197,7 @@ export const FeuilleBas = forwardRef<CommandeFeuille, Props>(function FeuilleBas
     },
   });
 
-  const defile = index === 2;
+  const defile = index >= 1;
 
   return (
     <View style={styles.cadre} pointerEvents="box-none" onLayout={onLayout}>
@@ -229,7 +231,7 @@ export const FeuilleBas = forwardRef<CommandeFeuille, Props>(function FeuilleBas
               keyboardShouldPersistTaps="handled"
               keyboardDismissMode="on-drag"
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.contenu}
+              contentContainerStyle={[styles.contenu, { paddingBottom: 28 + Math.max(insets.bottom, 12) }]}
             >
               {children}
             </Animated.ScrollView>

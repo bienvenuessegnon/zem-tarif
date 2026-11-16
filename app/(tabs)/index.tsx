@@ -114,6 +114,10 @@ export default function EcranAccueil() {
   }, [trajetActif]);
 
   useEffect(() => {
+    if (trajetActif) feuilleRef.current?.allerAAuMoins(2);
+  }, [trajetActif]);
+
+  useEffect(() => {
     return onSelectionLieu((lieu, cible) => {
       if (cible === 'depart') setDepart(lieu);
       else setArrivee(lieu);
