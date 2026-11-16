@@ -17,11 +17,11 @@ export type Reper = {
   nom: string;
   type: string;
   categorie: CategorieReper;
-  icone: string;
+  icone?: string;
   detail?: string;
   lat: number;
   lon: number;
-  source: string;
+  source?: string;
 };
 
 type Jeu = {
