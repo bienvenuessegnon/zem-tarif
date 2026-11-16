@@ -9,7 +9,13 @@
  *
  * Formule :
  *   prix = max(PLANCHER_FCFA, PRISE_EN_CHARGE_FCFA + TARIF_KM_FCFA × km)
- *   puis × COEFF_NUIT et/ou × COEFF_PLUIE, arrondi à PAS_ARRONDI_FCFA.
+ *   puis × COEFF_NUIT et/ou × COEFF_PLUIE
+ *   puis × COEFF_BAGAGE (aucun / petit sac / gros colis / sacs du marché),
+ *   arrondi à PAS_ARRONDI_FCFA.
+ *
+ * Les coefficients bagages sont des hypothèses de travail, pas une
+ * enquête de terrain : un passager les active seulement s'il voyage
+ * avec un volume inhabituel.
  *
  * Calage visé, de jour et par temps sec :
  *   ~2,4 km (Haie Vive – Cadjèhoun)  → 300 F
@@ -74,3 +80,29 @@ export const FACTEUR_DETOUR = 1.3;
 export const VITESSE_REPLI_KMH = 25;
 
 export const FUSEAU = 'Africa/Porto-Novo';
+
+/**
+ * Supplément bagages — hypothèses de travail (novembre 2026).
+ * Ce ne sont pas des tarifs observés trajet par trajet : un petit sac
+ * à dos n'est en général pas facturé, un gros colis ou les sacs du
+ * marché le sont plus souvent, sans règle unique.
+ *   aucun  : 1,00 (pas de supplément)
+ *   petit  : 1,10 (petit sac)
+ *   gros   : 1,25 (gros colis)
+ *   marche : 1,40 (sacs du marché)
+ */
+export type NiveauBagage = 'aucun' | 'petit' | 'gros' | 'marche';
+
+export const COEFF_BAGAGE: Record<NiveauBagage, number> = {
+  aucun: 1,
+  petit: 1.1,
+  gros: 1.25,
+  marche: 1.4,
+};
+
+export const LIBELLES_BAGAGE: Record<NiveauBagage, string> = {
+  aucun: 'Aucun',
+  petit: 'Petit sac',
+  gros: 'Gros colis',
+  marche: 'Sacs du marché',
+};

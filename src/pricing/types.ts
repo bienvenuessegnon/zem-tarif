@@ -1,8 +1,12 @@
+import type { NiveauBagage } from './constantes';
+
 export type ConditionsTrajet = {
   /** Heure locale à considérer, 0 à 23. */
   heure: number;
   /** Pluie ou voie fortement dégradée, indiquée par l'utilisateur. */
   pluie: boolean;
+  /** Volume de bagages ; « aucun » par défaut. */
+  bagage?: NiveauBagage;
 };
 
 export type TarifDeBase = {
@@ -12,11 +16,13 @@ export type TarifDeBase = {
   apresPlancher: number;
   apresNuit: number;
   apresPluie: number;
+  apresBagage: number;
   point: number;
   bas: number;
   haut: number;
   nuit: boolean;
   pluie: boolean;
+  bagage: NiveauBagage;
 };
 
 export type Signalement = {
@@ -39,6 +45,7 @@ export type Signalement = {
   appareilId?: string | null;
   role?: 'passager' | 'conducteur';
   bagage?: boolean;
+  bagageNiveau?: NiveauBagage;
   prixRefFcfa?: number | null;
   poids?: number;
 };

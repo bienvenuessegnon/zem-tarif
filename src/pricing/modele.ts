@@ -1,6 +1,7 @@
 import {
   COEFF_FOURCHETTE_BAS,
   COEFF_FOURCHETTE_HAUT,
+  COEFF_BAGAGE,
   COEFF_NUIT,
   COEFF_PLUIE,
   PLANCHER_FCFA,
@@ -15,6 +16,8 @@ export function tarifDeBase(distanceM: number, conditions: ConditionsTrajet): Ta
   const distanceKm = Math.max(0, distanceM) / 1000;
   const nuit = estNuit(conditions.heure);
   const pluie = Boolean(conditions.pluie);
+  const bagage = conditions.bagage ?? 'aucun';
+  const coeffBagage = COEFF_BAGAGE[bagage] ?? 1;
 
   const priseEnCharge = PRISE_EN_CHARGE_FCFA;
   const partKilometrique = TARIF_KM_FCFA * distanceKm;
@@ -22,14 +25,15 @@ export function tarifDeBase(distanceM: number, conditions: ConditionsTrajet): Ta
   const apresPlancher = appliquerPlancher(avantPlancher, PLANCHER_FCFA);
   const apresNuit = apresPlancher * (nuit ? COEFF_NUIT : 1);
   const apresPluie = apresNuit * (pluie ? COEFF_PLUIE : 1);
-  const point = appliquerPlancher(arrondirAuPas(apresPluie), PLANCHER_FCFA);
+  const apresBagage = apresPluie * coeffBagage;
+  const point = appliquerPlancher(arrondirAuPas(apresBagage), PLANCHER_FCFA);
   const bas = appliquerPlancher(
-    arrondirPlancher(apresPluie * COEFF_FOURCHETTE_BAS),
+    arrondirPlancher(apresBagage * COEFF_FOURCHETTE_BAS),
     PLANCHER_FCFA,
   );
   const haut = Math.max(
     point,
-    arrondirPlafond(apresPluie * COEFF_FOURCHETTE_HAUT),
+    arrondirPlafond(apresBagage * COEFF_FOURCHETTE_HAUT),
   );
 
   return {
@@ -39,10 +43,12 @@ export function tarifDeBase(distanceM: number, conditions: ConditionsTrajet): Ta
     apresPlancher,
     apresNuit,
     apresPluie,
+    apresBagage,
     point,
     bas,
     haut,
     nuit,
     pluie,
+    bagage,
   };
 }
