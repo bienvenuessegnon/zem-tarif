@@ -99,9 +99,11 @@ export default function EcranAPropos() {
         Les données récentes et précises, trajet par trajet, restent rares.
         Les guides de 2026 donnent des ordres de grandeur utiles, mais ce ne
         sont pas des enquêtes contrôlées. Le modèle ignore le nombre de
-        passagers, les bagages, et le fait qu’un visiteur se voit souvent
-        proposer plus cher. La durée vient d’OSRM, souvent optimiste aux
-        heures de pointe. Si le calcul d’itinéraire échoue, la distance est
+        passagers et le fait qu’un visiteur se voit souvent proposer plus cher.
+        Un supplément bagages (petit sac, gros colis ou sacs du marché) peut
+        être appliqué : les coefficients sont des hypothèses de travail, pas
+        une enquête de terrain, et se règlent dans constantes.ts. La durée
+        vient d’OSRM, souvent optimiste aux heures de pointe. Si le calcul d’itinéraire échoue, la distance est
         celle à vol d’oiseau, majorée de 30 %.
       </Text>
       <Text style={styles.p}>
@@ -119,7 +121,10 @@ export default function EcranAPropos() {
         raison d’au plus une requête par seconde, avec un identifiant de
         contact. Les cartes et les itinéraires viennent d’OpenStreetMap et
         d’OSRM. Les prix signalés restent sur l’appareil, sauf si un serveur
-        optionnel a été configuré. Aucun compte n’est demandé.
+        optionnel a été configuré. Aucun compte n’est demandé. Un trajet
+        partagé n’est visible que par les personnes qui ont le lien, et le
+        jeton expire à la fin de la course ou au plus tard au bout de six
+        heures.
       </Text>
       <Text style={styles.pied}>
         Carte © les contributeurs d’OpenStreetMap. Itinéraires : OSRM.

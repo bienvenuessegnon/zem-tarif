@@ -1,9 +1,15 @@
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { Icone } from '@/components/Icone';
+import { poserTrajetInitial } from '@/src/contenu/selection-lieu';
 import { lireFavoris, type Favori } from '@/src/storage/favoris';
+import {
+  lireHabituels,
+  supprimerHabituel,
+  type TrajetHabituel,
+} from '@/src/storage/habituels';
 import { formatDuree, formatFcfa, formatKm } from '@/src/pricing/format';
 import {
   lireHistorique,
@@ -17,18 +23,21 @@ import { typo } from '@/src/theme/typo';
 import { ombreLegere, rayon } from '@/src/theme/espace';
 
 export default function EcranHistorique() {
+  const router = useRouter();
   const [historique, setHistorique] = useState<EntreeHistorique[]>([]);
   const [avis, setAvis] = useState<Signalement[]>([]);
   const [favoris, setFavoris] = useState<Favori[]>([]);
+  const [habituels, setHabituels] = useState<TrajetHabituel[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       let actif = true;
-      Promise.all([lireHistorique(), lireSignalements(), lireFavoris()]).then(([h, s, f]) => {
+      Promise.all([lireHistorique(), lireSignalements(), lireFavoris(), lireHabituels()]).then(([h, s, f, hab]) => {
         if (!actif) return;
         setHistorique(h);
         setAvis(s.filter((x) => x.source === 'utilisateur'));
         setFavoris(f);
+        setHabituels(hab);
       });
       return () => {
         actif = false;
@@ -44,11 +53,54 @@ export default function EcranHistorique() {
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.contenu}>
       <Text style={styles.intro}>
-        Les estimations et les prix signalés restent sur cet appareil. Rien
-        n’est publié tant qu’aucun serveur n’est configuré.
+        Les estimations, les trajets habituels et le budget restent sur cet appareil.
       </Text>
 
-      <Text style={styles.titre}>Trajets fréquents</Text>
+      <Pressable style={styles.lienBudget} onPress={() => router.push('/budget')}>
+        <Icone nom="pie-chart" taille={16} couleur={couleurs.encre} />
+        <Text style={styles.lienBudgetTexte}>Budget transport</Text>
+        <Icone nom="chevron-right" taille={16} couleur={couleurs.muet} />
+      </Pressable>
+
+      <View style={styles.entete}>
+        <Text style={styles.titre}>Trajets habituels</Text>
+        <Pressable onPress={() => router.push('/habituel')}>
+          <Text style={styles.lien}>Ajouter</Text>
+        </Pressable>
+      </View>
+      {habituels.length === 0 ? (
+        <EtatVide
+          icone="home"
+          texte="Enregistrez Maison, l’école, le marché ou le bureau. Un tap sur l’accueil recalcule le prix, même hors ligne."
+        />
+      ) : (
+        habituels.map((h) => (
+          <Pressable
+            key={h.id}
+            style={[styles.carte, ombreLegere, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}
+            onPress={() => {
+              poserTrajetInitial({ origin: h.origin, dest: h.dest });
+              router.push('/');
+            }}
+          >
+            <View style={{ flex: 1 }}>
+              <Text style={styles.trajet}>{h.nom}</Text>
+              <Text style={styles.meta}>
+                {h.origin.label} → {h.dest.label}
+              </Text>
+            </View>
+            <Pressable
+              onPress={async () => setHabituels(await supprimerHabituel(h.id))}
+              accessibilityLabel="Supprimer ce trajet habituel"
+              style={{ padding: 6 }}
+            >
+              <Icone nom="x" taille={16} couleur={couleurs.muet} />
+            </Pressable>
+          </Pressable>
+        ))
+      )}
+
+      <Text style={[styles.titre, styles.titreSuite]}>Trajets fréquents</Text>
       {favoris.length === 0 ? (
         <EtatVide
           icone="star"
@@ -123,7 +175,7 @@ export default function EcranHistorique() {
   );
 }
 
-function EtatVide({ icone, texte }: { icone: 'tag' | 'clock' | 'star'; texte: string }) {
+function EtatVide({ icone, texte }: { icone: 'tag' | 'clock' | 'star' | 'home'; texte: string }) {
   return (
     <View style={styles.videBloc}>
       <View style={styles.videIcone}>
@@ -163,6 +215,18 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   titreSuite: { marginTop: 28 },
+  entete: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 },
+  lien: { fontFamily: typo.semi, fontSize: 14, color: couleurs.orFonce, marginBottom: 12 },
+  lienBudget: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: couleurs.surface,
+    borderRadius: rayon.md,
+    padding: 14,
+    marginBottom: 8,
+  },
+  lienBudgetTexte: { fontFamily: typo.semi, fontSize: 15, color: couleurs.encre, flex: 1 },
   videBloc: { alignItems: 'flex-start', gap: 10, marginBottom: 8 },
   videIcone: {
     width: 40,

@@ -1,15 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Image, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 
 import { BadgeHorsLigne } from '@/components/BadgeHorsLigne';
 import { Bouton } from '@/components/Bouton';
+import { BoutonSos } from '@/components/BoutonSos';
+import { JetonsBagage } from '@/components/JetonsBagage';
 import { FeuilleBas, type CommandeFeuille } from '@/components/FeuilleBas';
 import { CarteItineraire } from '@/components/CarteItineraire';
 import { Icone } from '@/components/Icone';
-import { telechargerSignalements, telechargerStatsTrajet, type TrajetCommunaute } from '@/src/api/client';
+import {
+  ouvrirTrajetPartage,
+  telechargerSignalements,
+  telechargerStatsTrajet,
+  terminerTrajetPartage,
+  type TrajetCommunaute,
+} from '@/src/api/client';
 import { poserBrouillon } from '@/src/contenu/brouillon';
 import { useProfil } from '@/src/contenu/contexte-profil';
 import { toucherLeger, toucherSucces } from '@/src/contenu/haptique';
@@ -20,11 +28,23 @@ import type { Lieu } from '@/src/geo/lieux';
 import { NOMBRE_REPERES, reperParId, reperVersLieu } from '@/src/geo/reperes';
 import { calculerItineraire, type Itineraire } from '@/src/geo/osrm';
 import { dansLaZone } from '@/src/geo/zone';
+import { LIBELLES_BAGAGE, type NiveauBagage } from '@/src/pricing/constantes';
 import { formatDuree, formatFcfa, formatKm } from '@/src/pricing/format';
 import { heurePortoNovo } from '@/src/pricing/horaire';
 import { estimer } from '@/src/pricing/melange';
 import type { Estimation, Signalement } from '@/src/pricing/types';
 import { utiliserReseau } from '@/src/reseau/etat';
+import { lienSuivi } from '@/src/securite/trajet-partage';
+import { demarrerSuiviPosition } from '@/src/securite/suivre-position';
+import { ajouterDepense } from '@/src/storage/budget';
+import { memoriserPosition } from '@/src/storage/derniere-position';
+import { lireHabituels, type TrajetHabituel } from '@/src/storage/habituels';
+import {
+  lireTrajetActif,
+  poserTrajetActif,
+  viderTrajetActif,
+  type TrajetPartageLocal,
+} from '@/src/storage/trajet-partage-local';
 import { ajouterHistorique, lireHistorique, type EntreeHistorique } from '@/src/storage/historique';
 import { basculerFavori, lireFavoris, type Favori } from '@/src/storage/favoris';
 import { lireLieuxRecents } from '@/src/storage/lieux-recents';
@@ -57,6 +77,12 @@ export default function EcranAccueil() {
   const [estFavoriActif, setEstFavoriActif] = useState(false);
   const [recentsLieux, setRecentsLieux] = useState<Lieu[]>([]);
   const [historique, setHistorique] = useState<EntreeHistorique[]>([]);
+  const [habituels, setHabituels] = useState<TrajetHabituel[]>([]);
+  const [bagage, setBagage] = useState<NiveauBagage>('aucun');
+  const [invitationBudget, setInvitationBudget] = useState(false);
+  const [budgetNote, setBudgetNote] = useState(false);
+  const [trajetActif, setTrajetActif] = useState<TrajetPartageLocal | null>(null);
+  const [messagePartage, setMessagePartage] = useState<string | null>(null);
   const [statsTrajet, setStatsTrajet] = useState<TrajetCommunaute | null>(null);
   const [paddingBas, setPaddingBas] = useState(200);
   const feuilleRef = useRef<CommandeFeuille>(null);
@@ -68,6 +94,24 @@ export default function EcranAccueil() {
       setArrivee(init.dest);
     }
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      const init = prendreTrajetInitial();
+      if (init) {
+        setDepart(init.origin);
+        setArrivee(init.dest);
+        feuilleRef.current?.allerAAuMoins(1);
+      }
+      void lireHabituels().then(setHabituels);
+      void lireTrajetActif().then(setTrajetActif);
+    }, []),
+  );
+
+  useEffect(() => {
+    if (!trajetActif) return;
+    return demarrerSuiviPosition(trajetActif.jeton);
+  }, [trajetActif]);
 
   useEffect(() => {
     return onSelectionLieu((lieu, cible) => {
@@ -141,13 +185,13 @@ export default function EcranAccueil() {
           destLat: arrivee.lat,
           destLon: arrivee.lon,
           distanceM: itineraire.distanceM,
-          conditions: { heure, pluie },
+          conditions: { heure, pluie, bagage },
         },
         avis,
       ),
     );
     void toucherLeger();
-  }, [depart, arrivee, itineraire, heure, pluie, avis]);
+  }, [depart, arrivee, itineraire, heure, pluie, bagage, avis]);
 
   useEffect(() => {
     if (!depart || !arrivee || !enLigne) {
@@ -178,7 +222,11 @@ export default function EcranAccueil() {
   useEffect(() => {
     if (aUnResultat && !avaitResultat.current) {
       feuilleRef.current?.allerAAuMoins(1);
+      setInvitationBudget(true);
+      setBudgetNote(false);
+      setMessagePartage(null);
     }
+    if (!aUnResultat) setInvitationBudget(false);
     avaitResultat.current = aUnResultat;
   }, [aUnResultat]);
 
@@ -204,6 +252,7 @@ export default function EcranAccueil() {
         source: 'gps',
       };
       setDepart(lieu);
+      void memoriserPosition(lieu.lat, lieu.lon);
       void toucherSucces();
     } catch {
       setErreurGps('Impossible de lire la position pour le moment.');
@@ -219,6 +268,7 @@ export default function EcranAccueil() {
       dureeS: itineraire.dureeS,
       heure,
       pluie,
+      bagage,
       estimation,
     });
   }
@@ -244,11 +294,71 @@ export default function EcranAccueil() {
     router.push('/signaler');
   }
 
+  async function partagerMonTrajet() {
+    if (!depart || !arrivee) return;
+    setMessagePartage(null);
+    let lat = depart.lat;
+    let lon = depart.lon;
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        lat = pos.coords.latitude;
+        lon = pos.coords.longitude;
+        await memoriserPosition(lat, lon);
+      }
+    } catch {
+      // On part de la position de départ déjà connue.
+    }
+    const cree = await ouvrirTrajetPartage({
+      originLabel: depart.label,
+      destLabel: arrivee.label,
+      lat,
+      lon,
+    });
+    if (!cree) {
+      setMessagePartage('Le suivi en direct nécessite une connexion. Réessayez une fois en ligne.');
+      return;
+    }
+    const local: TrajetPartageLocal = {
+      jeton: cree.jeton,
+      expireLe: cree.expireLe,
+      originLabel: depart.label,
+      destLabel: arrivee.label,
+    };
+    await poserTrajetActif(local);
+    setTrajetActif(local);
+    const url = cree.url || lienSuivi(cree.jeton);
+    const message = `Je partage mon trajet en zém : ${url} (lien valable 6 h, ou jusqu’à la fin de la course).`;
+    try {
+      if (Platform.OS === 'web' && typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share({ title: 'Suivi de mon trajet', text: message, url });
+      } else {
+        await Share.share({ message, url, title: 'Suivi de mon trajet' });
+      }
+    } catch {
+      setMessagePartage(url);
+      return;
+    }
+    setMessagePartage('Lien de suivi envoyé. Il expire à la fin du trajet, ou au plus tard dans six heures.');
+    void toucherSucces();
+  }
+
+  async function terminerMonTrajet() {
+    if (!trajetActif) return;
+    await terminerTrajetPartage(trajetActif.jeton);
+    await viderTrajetActif();
+    setTrajetActif(null);
+    setMessagePartage('Le suivi est terminé. Le lien n’est plus visible.');
+  }
+
   function libelleConditions(): string {
     const moment = estimation?.nuit ? 'Nuit' : 'Jour';
-    if (pluie) return `${moment} · pluie`;
-    if (estimation?.nuit) return `${moment} · tarif majoré`;
-    return `${moment} · tarif normal`;
+    const pieces = [moment];
+    if (pluie) pieces.push('pluie');
+    else if (estimation?.nuit) pieces.push('tarif majoré');
+    if (bagage !== 'aucun') pieces.push(LIBELLES_BAGAGE[bagage]);
+    return pieces.join(' · ');
   }
 
   function choisirJeton(id: string) {
@@ -282,13 +392,16 @@ export default function EcranAccueil() {
           </View>
           <BadgeHorsLigne visible={!enLigne} />
         </View>
-        <Pressable
-          onPress={() => void utiliserPosition()}
-          style={[styles.fab, ombreLegere]}
-          accessibilityLabel="Utiliser ma position"
-        >
-          <Icone nom="navigation" taille={18} couleur={couleurs.encre} />
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <BoutonSos compact />
+          <Pressable
+            onPress={() => void utiliserPosition()}
+            style={[styles.fab, ombreLegere]}
+            accessibilityLabel="Utiliser ma position"
+          >
+            <Icone nom="navigation" taille={18} couleur={couleurs.encre} />
+          </Pressable>
+        </View>
       </View>
 
       <FeuilleBas
@@ -338,6 +451,29 @@ export default function EcranAccueil() {
             onSignaler={() => void garderEtSignaler()}
             onPluie={() => setPluie((v) => !v)}
             pluie={pluie}
+            bagage={bagage}
+            onBagage={setBagage}
+            invitationBudget={invitationBudget && !budgetNote}
+            onNoterBudget={async () => {
+              await ajouterDepense({
+                prixFcfa: estimation.point,
+                de: depart.label,
+                vers: arrivee.label,
+                source: 'saisie',
+              });
+              setBudgetNote(true);
+              setInvitationBudget(false);
+              void toucherSucces();
+            }}
+            onIgnorerBudget={() => setInvitationBudget(false)}
+            onHabituel={() => {
+              preparerBrouillon();
+              router.push('/habituel');
+            }}
+            trajetActif={trajetActif}
+            messagePartage={messagePartage}
+            onPartagerTrajet={() => void partagerMonTrajet()}
+            onTerminerTrajet={() => void terminerMonTrajet()}
           />
         ) : (
           <VueAccueil
@@ -347,6 +483,13 @@ export default function EcranAccueil() {
             favoris={favoris}
             recentsLieux={recentsLieux}
             historique={historique}
+            habituels={habituels}
+            onHabituel={(h) => {
+              setDepart(h.origin);
+              setArrivee(h.dest);
+              void toucherLeger();
+            }}
+            onGererHabituels={() => router.push('/habituel')}
             onChercherDepart={() => router.push({ pathname: '/recherche', params: { cible: 'depart' } })}
             onChercherArrivee={() => router.push({ pathname: '/recherche', params: { cible: 'arrivee' } })}
             onPosition={() => void utiliserPosition()}
@@ -379,6 +522,9 @@ function VueAccueil({
   favoris,
   recentsLieux,
   historique,
+  habituels,
+  onHabituel,
+  onGererHabituels,
   onChercherDepart,
   onChercherArrivee,
   onPosition,
@@ -393,6 +539,9 @@ function VueAccueil({
   favoris: Favori[];
   recentsLieux: Lieu[];
   historique: EntreeHistorique[];
+  habituels: TrajetHabituel[];
+  onHabituel: (h: TrajetHabituel) => void;
+  onGererHabituels: () => void;
   onChercherDepart: () => void;
   onChercherArrivee: () => void;
   onPosition: () => void;
@@ -432,6 +581,35 @@ function VueAccueil({
             <Text style={styles.jetonTexte}>{j.nom}</Text>
           </Pressable>
         ))}
+      </View>
+
+      <View style={{ marginTop: 18 }}>
+        <View style={styles.sectionRang}>
+          <Text style={styles.section}>Trajets habituels</Text>
+          <Pressable onPress={onGererHabituels}>
+            <Text style={styles.lienSection}>{habituels.length ? 'Gérer' : 'Ajouter'}</Text>
+          </Pressable>
+        </View>
+        {habituels.length === 0 ? (
+          <Text style={styles.note}>
+            Enregistrez Maison, l’école, le marché ou le bureau pour obtenir le prix d’un tap, même hors
+            ligne.
+          </Text>
+        ) : (
+          <View style={styles.jetons}>
+            {habituels.map((h) => (
+              <Pressable
+                key={h.id}
+                onPress={() => onHabituel(h)}
+                style={styles.jetonHabituel}
+                accessibilityLabel={`Estimer ${h.nom}`}
+              >
+                <Icone nom={h.icone} taille={14} couleur={couleurs.encre} />
+                <Text style={styles.jetonTexte}>{h.nom}</Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
       </View>
 
       {historique.length > 0 ? (
@@ -515,6 +693,16 @@ function VueReference({
   onSignaler,
   onPluie,
   pluie,
+  bagage,
+  onBagage,
+  invitationBudget,
+  onNoterBudget,
+  onIgnorerBudget,
+  onHabituel,
+  trajetActif,
+  messagePartage,
+  onPartagerTrajet,
+  onTerminerTrajet,
 }: {
   depart: Lieu;
   arrivee: Lieu;
@@ -532,6 +720,16 @@ function VueReference({
   onSignaler: () => void;
   onPluie: () => void;
   pluie: boolean;
+  bagage: NiveauBagage;
+  onBagage: (n: NiveauBagage) => void;
+  invitationBudget: boolean;
+  onNoterBudget: () => void;
+  onIgnorerBudget: () => void;
+  onHabituel: () => void;
+  trajetActif: TrajetPartageLocal | null;
+  messagePartage: string | null;
+  onPartagerTrajet: () => void;
+  onTerminerTrajet: () => void;
 }) {
   const largeur = Math.max(1, estimation.haut - estimation.bas);
   const curseur = Math.min(1, Math.max(0, (estimation.point - estimation.bas) / largeur));
@@ -600,17 +798,56 @@ function VueReference({
         </Text>
       ) : null}
 
+      <View style={{ marginTop: 4 }}>
+        <JetonsBagage valeur={bagage} onChange={onBagage} />
+      </View>
+
+      {invitationBudget ? (
+        <View style={styles.invitation}>
+          <Text style={styles.invitationTexte}>
+            Noter {formatFcfa(estimation.point)} dans le budget transport ?
+          </Text>
+          <View style={styles.boutons}>
+            <View style={{ flex: 1 }}>
+              <Bouton titre="Noter" onPress={onNoterBudget} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Bouton titre="Plus tard" variante="contour" onPress={onIgnorerBudget} />
+            </View>
+          </View>
+        </View>
+      ) : null}
+
       <View style={{ marginTop: 12 }}>
         <Bouton titre="Montrer au zém" onPress={onMontrer} />
       </View>
       <View style={styles.boutons}>
         <View style={{ flex: 1 }}>
-          <Bouton titre="Partager" variante="contour" onPress={onPartager} />
+          <Bouton titre="Partager le prix" variante="contour" onPress={onPartager} />
         </View>
         <View style={{ flex: 1 }}>
           <Bouton titre="J’ai payé" variante="contour" onPress={onSignaler} />
         </View>
       </View>
+
+      {trajetActif ? (
+        <View style={styles.invitation}>
+          <Text style={styles.invitationTexte}>
+            Suivi en cours. Le lien expire à la fin de la course, ou au plus tard dans six heures.
+          </Text>
+          <Bouton titre="Terminer le suivi" variante="contour" onPress={onTerminerTrajet} />
+        </View>
+      ) : (
+        <View style={{ marginTop: 12 }}>
+          <Bouton titre="Partager mon trajet" variante="contour" onPress={onPartagerTrajet} />
+        </View>
+      )}
+      {messagePartage ? <Text style={styles.note}>{messagePartage}</Text> : null}
+
+      <Pressable onPress={onHabituel} style={styles.pluie}>
+        <Icone nom="bookmark" taille={14} couleur={couleurs.orFonce} />
+        <Text style={styles.pluieTexte}>Enregistrer comme trajet habituel</Text>
+      </Pressable>
       <Pressable onPress={onPluie} style={styles.pluie}>
         <Icone nom="cloud-rain" taille={14} couleur={pluie ? couleurs.orFonce : couleurs.muet} />
         <Text style={styles.pluieTexte}>{pluie ? 'Pluie prise en compte' : 'Ajouter la pluie'}</Text>
@@ -685,6 +922,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   jetonTexte: { fontFamily: typo.medium, fontSize: 13, color: couleurs.encre },
+  sectionRang: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   section: {
     fontFamily: typo.medium,
     fontSize: 11,
@@ -693,6 +931,26 @@ const styles = StyleSheet.create({
     color: couleurs.muet,
     marginBottom: 4,
   },
+  lienSection: { fontFamily: typo.semi, fontSize: 13, color: couleurs.orFonce },
+  jetonHabituel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: couleurs.or,
+    backgroundColor: couleurs.orPale,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  invitation: {
+    backgroundColor: couleurs.fond,
+    borderRadius: rayon.md,
+    padding: 14,
+    marginTop: 14,
+    gap: 10,
+  },
+  invitationTexte: { fontFamily: typo.medium, fontSize: 14, color: couleurs.encre, lineHeight: 20 },
   ligneRecent: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 },
   recentTitre: { fontFamily: typo.medium, fontSize: 14, color: couleurs.encre },
   recentSous: { fontFamily: typo.regular, fontSize: 12, color: couleurs.muet, marginTop: 1 },

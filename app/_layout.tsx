@@ -27,6 +27,18 @@ SplashScreen.preventAutoHideAsync();
 
 type Phase = 'chargement' | 'splash' | 'onboarding' | 'app';
 
+function pageSuivi(): boolean {
+  try {
+    if (typeof window !== 'undefined') {
+      return window.location.pathname.startsWith('/suivi');
+    }
+  } catch {
+    // Environnement sans fenêtre (rendu natif initial).
+  }
+  return false;
+}
+
+
 export default function Racine() {
   const [loaded, error] = useFonts({
     PlusJakartaSans_400Regular: require('../assets/fonts/PlusJakartaSans_400Regular.ttf'),
@@ -50,6 +62,10 @@ export default function Racine() {
       await SplashScreen.hideAsync();
       if (!actif) return;
       setProfil(actuel);
+      if (pageSuivi()) {
+        setPhase('app');
+        return;
+      }
       setPhase('splash');
       const reste = Math.max(0, 2000 - (Date.now() - debut));
       await new Promise((r) => setTimeout(r, reste));
@@ -134,6 +150,9 @@ export default function Racine() {
               options={{ headerShown: false, presentation: 'fullScreenModal', animation: 'fade' }}
             />
             <Stack.Screen name="conseils" options={{ title: 'Conseils' }} />
+            <Stack.Screen name="budget" options={{ title: 'Budget transport' }} />
+            <Stack.Screen name="habituel" options={{ title: 'Trajet habituel' }} />
+            <Stack.Screen name="suivi" options={{ title: 'Suivi du trajet', headerShown: false }} />
           </Stack>
         </View>
       </View>

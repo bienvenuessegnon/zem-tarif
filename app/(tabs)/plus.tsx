@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -8,6 +8,12 @@ import { useProfil } from '@/src/contenu/contexte-profil';
 import { SLOGAN } from '@/src/contenu/slogan';
 import { toucherSucces } from '@/src/contenu/haptique';
 import { revoirOnboarding } from '@/src/storage/profil';
+import {
+  ajouterContactUrgence,
+  lireContactsUrgence,
+  supprimerContactUrgence,
+  type ContactUrgence,
+} from '@/src/storage/contacts-urgence';
 import { couleurs } from '@/src/theme/colors';
 import { typo } from '@/src/theme/typo';
 import { rayon } from '@/src/theme/espace';
@@ -17,6 +23,13 @@ export default function EcranPlus() {
   const { profil, enregistrer } = useProfil();
   const [pseudo, setPseudo] = useState(profil.pseudo);
   const [sauve, setSauve] = useState(false);
+  const [contacts, setContacts] = useState<ContactUrgence[]>([]);
+  const [nomContact, setNomContact] = useState('');
+  const [telContact, setTelContact] = useState('');
+
+  useEffect(() => {
+    void lireContactsUrgence().then(setContacts);
+  }, []);
 
   async function sauver() {
     await enregistrer({ ...profil, pseudo: pseudo.trim().slice(0, 32) });
@@ -47,7 +60,55 @@ export default function EcranPlus() {
       />
       <Bouton titre={sauve ? 'Enregistré' : 'Enregistrer'} onPress={sauver} disabled={sauve} />
 
+      <Text style={[styles.titre, { marginTop: 32 }]}>Contacts d’urgence</Text>
+      <Text style={styles.p}>
+        Pour le bouton SOS (appui long de 3 secondes). Un SMS est ouvert avec votre position, puis un
+        appel vers le premier contact, si le téléphone le permet. Jusqu’à trois numéros, enregistrés
+        seulement sur cet appareil.
+      </Text>
+      {contacts.map((c) => (
+        <Ligne
+          key={c.id}
+          icone="phone"
+          titre={c.nom || c.telephone}
+          note={c.nom ? c.telephone : undefined}
+          onPress={async () => setContacts(await supprimerContactUrgence(c.id))}
+        />
+      ))}
+      {contacts.length < 3 ? (
+        <View style={{ marginTop: 8, marginBottom: 8 }}>
+          <TextInput
+            value={nomContact}
+            onChangeText={setNomContact}
+            placeholder="Nom du contact"
+            placeholderTextColor={couleurs.muet}
+            style={styles.champ}
+          />
+          <TextInput
+            value={telContact}
+            onChangeText={setTelContact}
+            placeholder="Numéro, ex. 01 00 00 00 00"
+            placeholderTextColor={couleurs.muet}
+            keyboardType="phone-pad"
+            style={styles.champ}
+          />
+          <Bouton
+            titre="Ajouter ce contact"
+            onPress={async () => {
+              if (telContact.trim().length < 6) return;
+              const liste = await ajouterContactUrgence(nomContact, telContact);
+              setContacts(liste);
+              setNomContact('');
+              setTelContact('');
+              void toucherSucces();
+            }}
+            disabled={telContact.trim().length < 6}
+          />
+        </View>
+      ) : null}
+
       <Text style={[styles.titre, { marginTop: 32 }]}>L’application</Text>
+      <Ligne icone="pie-chart" titre="Budget transport" onPress={() => router.push('/budget')} />
       <Ligne icone="shield" titre="Conseils de négociation et de sécurité" onPress={() => router.push('/conseils')} />
       <Ligne icone="info" titre="La méthode et les sources" onPress={() => router.push('/a-propos')} />
       <Ligne

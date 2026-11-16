@@ -17,8 +17,12 @@ Ce n’est pas un prix imposé, et ce n’est pas GoZem ni Yango.
 - Carte en plein écran et feuille du bas réglable (trois hauteurs), avec l’accueil « Où allez-vous ? » et l’écran de prix de référence.
 - Recherche locale de plus de 3 600 repères du Grand Nokoué (marchés, carrefours, pharmacies, lieux de culte, campus, gares, hôpitaux, quartiers), insensible aux accents, utilisable hors ligne. Les données viennent d’OpenStreetMap (ODbL). Un repère manquant peut être suggéré.
 - Mode hors ligne complet : le barème et les repères sont sur l’appareil. L’itinéraire passe par OSRM en ligne, ou à défaut par la distance à vol d’oiseau majorée d’un facteur de détour de 1,3. Un badge l’indique. Les signalements et suggestions restent en file et partent plus tard.
-- Fourchette en francs CFA, distance et durée indicative. Majoration de nuit (22 h – 6 h, heure de Porto-Novo) et option pluie.
-- Signalement en deux gestes : jetons de prix, tags nuit / pluie / bagage. Un score de fiabilité, calculé côté serveur à partir de l’historique de l’appareil, pondère les avis. Les écarts importants pèsent moins, ils ne sont pas masqués. S’il n’y a pas encore d’avis sur un trajet, l’écran le dit clairement.
+- Fourchette en francs CFA, distance et durée indicative. Majoration de nuit (22 h – 6 h, heure de Porto-Novo), option pluie, et supplément bagages (aucun, petit sac, gros colis, sacs du marché). Les coefficients bagages sont des hypothèses de travail, pas une enquête de terrain, et se règlent dans `src/pricing/constantes.ts`.
+- Trajets habituels (Maison, école, marché, bureau…) enregistrés sur l’appareil, avec une icône, et un tap sur l’accueil pour obtenir le prix, même hors ligne.
+- Budget transport : totaux de la semaine et du mois, graphique des 7 derniers jours, plafond mensuel facultatif, export CSV. Les sommes restent sur l’appareil. Une invitation apparaît après une estimation ; un signalement est aussi noté automatiquement.
+- Trajet partagé : un lien public (page `/suivi` de la démo) montre la position en direct. Le jeton expire à la fin de la course, ou au plus tard au bout de six heures. Aucun compte n’est demandé.
+- Bouton SOS (appui long de 3 secondes) : ouvre un SMS vers les contacts d’urgence avec un lien de position, puis un appel vers le premier contact si le téléphone le permet. Hors ligne, le SMS utilise la dernière position GPS connue.
+- Signalement en deux gestes : jetons de prix, tags nuit / pluie / bagages. Un score de fiabilité, calculé côté serveur à partir de l’historique de l’appareil, pondère les avis. Les écarts importants pèsent moins, ils ne sont pas masqués. S’il n’y a pas encore d’avis sur un trajet, l’écran le dit clairement.
 - « Montrer au zém » : plein écran très contrasté, grands chiffres et fourchette, écran qui reste allumé, peu de texte, pour le montrer au conducteur.
 - Carte de prix partageable (image et lien). Le lien rouvre la démo sur le même trajet. Sur le web : téléchargement de l’image ou API Web Share ; sur Android : feuille de partage (WhatsApp, statut, copie du lien).
 - Écran d’accueil animé, courte introduction, pseudo facultatif (pas de compte).
@@ -36,11 +40,14 @@ prix = max(250 F, 150 F + 65 F × km)
 puis, le cas échéant :
   × 1,25 la nuit (22 h – 6 h)
   × 1,30 s’il pleut ou si la voie est très dégradée
+  × coefficient bagages (aucun 1,00 ; petit sac 1,10 ; gros colis 1,25 ; sacs du marché 1,40)
 arrondi à 50 F
 fourchette affichée : 85 % – 130 % du point central
 ```
 
 Dès que trois avis d’usagers relient à peu près les mêmes deux points (dans un rayon d’un kilomètre à chaque bout), le point central glisse vers leur médiane, jusqu’à 65 % du poids. Les repères publiés ci-dessous ne sont pas des avis d’usagers et n’entrent pas dans ce mélange.
+
+Les coefficients bagages sont des hypothèses de travail, à ajuster si une enquête de terrain est disponible. Ils ne prétendent pas refléter une pratique mesurée.
 
 Les distances de calage ont été mesurées avec OSRM (profil routier). Le barème a été recalibré en novembre 2026, après la hausse du carburant officiel à 725 F le litre (1er mai 2026) et des témoignages plus récents sur les courses courtes.
 
@@ -200,6 +207,10 @@ Le zém se négocie à chaque course. Zém Tarif s’adresse au passager : il do
 - [docs/partage.png](docs/partage.png) — carte de prix à partager
 - [docs/signaler.png](docs/signaler.png) — signaler un prix en deux gestes
 - [docs/montrer.png](docs/montrer.png) — plein écran « Montrer au zém »
+- [docs/habituels.png](docs/habituels.png) — trajets habituels sur l’accueil
+- [docs/budget.png](docs/budget.png) — budget transport
+- [docs/bagages.png](docs/bagages.png) — supplément bagages
+- [docs/suivi.png](docs/suivi.png) — page publique de suivi d’un trajet
 - [docs/splash.png](docs/splash.png) — écran d’accueil, logo et slogan
 - [docs/onboarding.png](docs/onboarding.png) — introduction au premier lancement
 - [docs/communaute.png](docs/communaute.png) — prix de la communauté

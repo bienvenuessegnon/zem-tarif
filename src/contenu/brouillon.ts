@@ -1,4 +1,5 @@
 import type { Lieu } from '../geo/lieux';
+import type { NiveauBagage } from '../pricing/constantes';
 import type { Estimation } from '../pricing/types';
 
 export type BrouillonCourse = {
@@ -8,6 +9,7 @@ export type BrouillonCourse = {
   dureeS: number;
   heure: number;
   pluie: boolean;
+  bagage?: NiveauBagage;
   estimation: Estimation;
 };
 
