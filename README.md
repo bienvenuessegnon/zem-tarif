@@ -12,7 +12,7 @@ Ce n’est pas un prix imposé, et ce n’est pas GoZem ni Yango.
 
 ![Accueil « Où allez-vous ? »](docs/accueil.png)
 
-## Fonctions (version 1.2)
+## Fonctions (version 1.2.1)
 
 - Carte en plein écran et feuille du bas réglable (trois hauteurs), avec l’accueil « Où allez-vous ? » et l’écran de prix de référence.
 - Recherche locale de plus de 3 600 repères du Grand Nokoué (marchés, carrefours, pharmacies, lieux de culte, campus, gares, hôpitaux, quartiers), insensible aux accents, utilisable hors ligne. Les données viennent d’OpenStreetMap (ODbL). Un repère manquant peut être suggéré.
@@ -151,13 +151,16 @@ eas build --platform android --profile production   # AAB
 
 Les APK, pour installation directe, sont sur la page des versions :
 
-- [zem-tarif-1.2.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.2.0/zem-tarif-1.2.0.apk) (version courante, [v1.2.0](https://github.com/bienvenuessegnon/zem-tarif/releases/tag/v1.2.0))
+- [zem-tarif-1.2.1-arm64.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.2.1/zem-tarif-1.2.1-arm64.apk) (version courante recommandée, la plupart des téléphones, [v1.2.1](https://github.com/bienvenuessegnon/zem-tarif/releases/tag/v1.2.1))
+- [zem-tarif-1.2.1-armv7.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.2.1/zem-tarif-1.2.1-armv7.apk) (téléphones plus anciens, architecture armeabi-v7a)
+- [zem-tarif-1.2.1-universal.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.2.1/zem-tarif-1.2.1-universal.apk) (les deux architectures, plus lourd)
+- [zem-tarif-1.2.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.2.0/zem-tarif-1.2.0.apk)
 - [zem-tarif-1.1.1.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.1.1/zem-tarif-1.1.1.apk)
 - [zem-tarif-1.1.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.1.0/zem-tarif-1.1.0.apk)
 - [zem-tarif-1.0.1.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.0.1/zem-tarif-1.0.1.apk)
 - [zem-tarif-1.0.0.apk](https://github.com/bienvenuessegnon/zem-tarif/releases/download/v1.0.0/zem-tarif-1.0.0.apk)
 
-Ces fichiers ont été signés localement avec le keystore de débogage ; ils conviennent à un essai sur un téléphone, pas à une mise en ligne sur le Play Store (qui exige un AAB et une clé de production). Un APK signé avec cette clé ne pourra pas être remplacé plus tard par une version EAS ou Play Store.
+À partir de la 1.2.1, les APK sont des builds de release : R8, ressources réduites, moteur Hermes, et un fichier par architecture (plus un APK universel facultatif). Ils sont signés avec une clé de production conservée hors du dépôt, dans `/workspace/mobile/_keystore/`. Cette clé doit être sauvegardée : sans elle, une mise à jour sur le Play Store sera impossible. Les versions 1.2.0 et antérieures restent disponibles ; elles avaient été signées avec le keystore de débogage et ne sont pas interchangeables avec la 1.2.1 sur un même téléphone (signature différente).
 
 On peut aussi construire un APK en local, après avoir installé un JDK 17 et le SDK Android, avec `npx expo prebuild --platform android` puis `cd android && ./gradlew assembleRelease`.
 

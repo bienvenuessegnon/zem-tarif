@@ -2,7 +2,7 @@
   "expo": {
     "name": "Zém Tarif",
     "slug": "zem-tarif",
-    "version": "1.2.0",
+    "version": "1.2.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "zemtarif",
@@ -32,7 +32,7 @@
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION"
       ],
-      "versionCode": 5
+      "versionCode": 6
     },
     "web": {
       "bundler": "metro",
@@ -56,10 +56,23 @@
           "locationWhenInUsePermission": "Zém Tarif utilise votre position uniquement pour proposer un point de départ."
         }
       ],
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "enableProguardInReleaseBuilds": true,
+            "useLegacyPackaging": false
+          }
+        }
+      ],
+      "./plugins/android-release.js"
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "jsEngine": "hermes"
   }
 }

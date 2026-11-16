@@ -48,3 +48,10 @@ backend/*.db
 
 # Captures de travail
 *.log
+
+# Clés de signature (doivent rester hors du dépôt)
+*.jks
+*.keystore
+!android/app/debug.keystore
+keystore.properties
+_keystore/
