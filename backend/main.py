@@ -8,6 +8,7 @@ dès que DATABASE_URL est définie, sinon une base SQLite locale.
 from __future__ import annotations
 
 import os
+import secrets
 import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
@@ -180,6 +181,7 @@ def assurer_colonnes_sqlite(cx: sqlite3.Connection) -> None:
         ("appareil_id", "TEXT"),
         ("role", "TEXT"),
         ("bagage", "INTEGER"),
+        ("bagage_niveau", "TEXT"),
         ("poids", "REAL"),
         ("prix_ref", "INTEGER"),
     ):
@@ -224,10 +226,40 @@ CREATE TABLE IF NOT EXISTS suggestions_reperes (
 ALTER_POSTGRES = """
 ALTER TABLE signalements ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'passager';
 ALTER TABLE signalements ADD COLUMN IF NOT EXISTS bagage BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE signalements ADD COLUMN IF NOT EXISTS bagage_niveau TEXT DEFAULT 'aucun';
 ALTER TABLE signalements ADD COLUMN IF NOT EXISTS poids DOUBLE PRECISION NOT NULL DEFAULT 1;
 ALTER TABLE signalements ADD COLUMN IF NOT EXISTS prix_ref INTEGER;
 """
 
+
+
+DDL_TRAJETS_SQLITE = """
+CREATE TABLE IF NOT EXISTS trajets_partages (
+  jeton TEXT PRIMARY KEY,
+  appareil_id TEXT,
+  origin_label TEXT,
+  dest_label TEXT,
+  lat REAL,
+  lon REAL,
+  commence_le TEXT NOT NULL,
+  expire_le TEXT NOT NULL,
+  termine INTEGER NOT NULL DEFAULT 0
+);
+"""
+
+DDL_TRAJETS_POSTGRES = """
+CREATE TABLE IF NOT EXISTS trajets_partages (
+  jeton TEXT PRIMARY KEY,
+  appareil_id TEXT,
+  origin_label TEXT,
+  dest_label TEXT,
+  lat DOUBLE PRECISION,
+  lon DOUBLE PRECISION,
+  commence_le TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expire_le TIMESTAMPTZ NOT NULL,
+  termine BOOLEAN NOT NULL DEFAULT FALSE
+);
+"""
 
 def init_db() -> None:
     with connexion() as cx:
@@ -238,10 +270,12 @@ def init_db() -> None:
                 if s:
                     cx.execute(s)
             cx.execute(DDL_APPAREILS_POSTGRES)
+            cx.execute(DDL_TRAJETS_POSTGRES)
         else:
             cx.executescript(DDL_SQLITE)
             assurer_colonnes_sqlite(cx)
             cx.executescript(DDL_APPAREILS_SQLITE)
+            cx.executescript(DDL_TRAJETS_SQLITE)
 
 
 class SignalementIn(BaseModel):
@@ -263,6 +297,7 @@ class SignalementIn(BaseModel):
     source: str = "utilisateur"
     role: str = "passager"
     bagage: bool = False
+    bagageNiveau: str | None = None
     prixRefFcfa: int | None = Field(default=None, ge=MIN_PRIX, le=MAX_PRIX)
 
     @field_validator("pseudo")
@@ -282,6 +317,13 @@ class SignalementIn(BaseModel):
     @classmethod
     def nettoyer_role(cls, valeur: str) -> str:
         return "conducteur" if valeur == "conducteur" else "passager"
+
+    @field_validator("bagageNiveau")
+    @classmethod
+    def nettoyer_bagage(cls, valeur: str | None) -> str | None:
+        if valeur in {"aucun", "petit", "gros", "marche"}:
+            return valeur
+        return None
 
 
 def ligne_vers_json(row: Any) -> dict[str, Any]:
@@ -304,6 +346,7 @@ def ligne_vers_json(row: Any) -> dict[str, Any]:
         "source": d["source"],
         "role": d.get("role") or "passager",
         "bagage": bool(d.get("bagage") or False),
+        "bagageNiveau": d.get("bagage_niveau") or ("gros" if d.get("bagage") else "aucun"),
         "poids": float(d.get("poids") or 1) if d.get("poids") is not None else 1.0,
         "prixRefFcfa": d.get("prix_ref"),
     }
@@ -416,8 +459,8 @@ def creer(avis: SignalementIn, appareil_entete: str | None) -> dict[str, Any]:
               id, origin_lat, origin_lon, dest_lat, dest_lon,
               origin_label, dest_label, distance_m, prix_paye_fcfa,
               nuit, pluie, heure, pseudo, appareil_id, enregistre_le, source,
-              role, bagage, poids, prix_ref
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+              role, bagage, bagage_niveau, poids, prix_ref
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 avis.id,
@@ -438,6 +481,7 @@ def creer(avis: SignalementIn, appareil_entete: str | None) -> dict[str, Any]:
                 avis.source,
                 avis.role,
                 avis.bagage if EST_POSTGRES else int(avis.bagage),
+                (avis.bagageNiveau or ("gros" if avis.bagage else "aucun")),
                 poids,
                 avis.prixRefFcfa,
             ),
@@ -718,4 +762,155 @@ def zones_demandees() -> dict[str, Any]:
         for r in rows
     ]
     return {"zones": zones, "nb": len(zones)}
+
+# --- Trajets partagés (jeton temporaire, sans compte) -------------------
+
+DUREE_JETON = timedelta(hours=6)
+DEMO_BASE = (os.environ.get("DEMO_PUBLIC_URL") or "https://zem-tarif.onrender.com").rstrip("/")
+
+
+def _nouveau_jeton() -> str:
+    return secrets.token_urlsafe(18)
+
+
+class TrajetPartageIn(BaseModel):
+    originLabel: str = Field(default="", max_length=120)
+    destLabel: str = Field(default="", max_length=120)
+    lat: float
+    lon: float
+
+
+class PositionIn(BaseModel):
+    lat: float
+    lon: float
+
+
+def _trajet_json(row: Any, masque: bool = False) -> dict[str, Any]:
+    expire = val(row, "expire_le")
+    termine = bool(val(row, "termine"))
+    expire_dt = expire
+    if isinstance(expire, str):
+        try:
+            expire_dt = datetime.fromisoformat(expire.replace("Z", "+00:00"))
+        except ValueError:
+            expire_dt = datetime.now(timezone.utc)
+    maintenant = datetime.now(timezone.utc)
+    if getattr(expire_dt, "tzinfo", None) is None:
+        expire_dt = expire_dt.replace(tzinfo=timezone.utc)
+    expire_le = expire_dt.isoformat()
+    perime = termine or expire_dt <= maintenant
+    sortie = {
+        "jeton": val(row, "jeton"),
+        "originLabel": val(row, "origin_label") or "",
+        "destLabel": val(row, "dest_label") or "",
+        "lat": float(val(row, "lat") or 0),
+        "lon": float(val(row, "lon") or 0),
+        "expireLe": expire_le,
+        "termine": termine,
+        "perime": perime,
+    }
+    if masque and perime:
+        return {"jeton": val(row, "jeton"), "perime": True, "termine": True}
+    return sortie
+
+
+@app.post("/trajets-partages", status_code=201)
+@app.post("/api/trajets-partages", status_code=201)
+def creer_trajet_partage(
+    avis: TrajetPartageIn,
+    x_device_id: str | None = Header(default=None, alias="X-Device-Id"),
+) -> dict[str, Any]:
+    if not (-90 <= avis.lat <= 90 and -180 <= avis.lon <= 180):
+        raise HTTPException(400, "position invalide")
+    jeton = _nouveau_jeton()
+    maintenant = datetime.now(timezone.utc)
+    expire = maintenant + DUREE_JETON
+    with connexion() as cx:
+        exec_sql(
+            cx,
+            """
+            INSERT INTO trajets_partages (
+              jeton, appareil_id, origin_label, dest_label, lat, lon,
+              commence_le, expire_le, termine
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                jeton,
+                x_device_id,
+                avis.originLabel,
+                avis.destLabel,
+                avis.lat,
+                avis.lon,
+                maintenant.isoformat(),
+                expire.isoformat(),
+                False if EST_POSTGRES else 0,
+            ),
+        )
+    return {
+        "jeton": jeton,
+        "url": f"{DEMO_BASE}/suivi?jeton={jeton}",
+        "expireLe": expire.isoformat(),
+    }
+
+
+@app.get("/trajets-partages/{jeton}")
+@app.get("/api/trajets-partages/{jeton}")
+def lire_trajet_partage(jeton: str) -> dict[str, Any]:
+    with connexion() as cx:
+        row = exec_sql(
+            cx, "SELECT * FROM trajets_partages WHERE jeton = ?", (jeton,)
+        ).fetchone()
+    if not row:
+        raise HTTPException(404, "trajet introuvable ou expiré")
+    data = _trajet_json(row)
+    if data.get("perime"):
+        raise HTTPException(404, "trajet introuvable ou expiré")
+    return data
+
+
+@app.patch("/trajets-partages/{jeton}")
+@app.patch("/api/trajets-partages/{jeton}")
+def maj_trajet_partage(jeton: str, pos: PositionIn) -> dict[str, str]:
+    if not (-90 <= pos.lat <= 90 and -180 <= pos.lon <= 180):
+        raise HTTPException(400, "position invalide")
+    with connexion() as cx:
+        row = exec_sql(
+            cx, "SELECT expire_le, termine FROM trajets_partages WHERE jeton = ?", (jeton,)
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, "trajet introuvable ou expiré")
+        data = _trajet_json(row)
+        if data.get("perime"):
+            raise HTTPException(404, "trajet introuvable ou expiré")
+        exec_sql(
+            cx,
+            "UPDATE trajets_partages SET lat = ?, lon = ? WHERE jeton = ?",
+            (pos.lat, pos.lon, jeton),
+        )
+    return {"statut": "ok"}
+
+
+@app.post("/trajets-partages/{jeton}/terminer")
+@app.post("/api/trajets-partages/{jeton}/terminer")
+def terminer_trajet_partage(
+    jeton: str,
+    x_device_id: str | None = Header(default=None, alias="X-Device-Id"),
+) -> dict[str, str]:
+    with connexion() as cx:
+        row = exec_sql(
+            cx,
+            "SELECT appareil_id FROM trajets_partages WHERE jeton = ?",
+            (jeton,),
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, "trajet introuvable ou expiré")
+        proprietaire = val(row, "appareil_id") or ""
+        if proprietaire and x_device_id and proprietaire != x_device_id:
+            raise HTTPException(403, "ce trajet n'appartient pas à cet appareil")
+        exec_sql(
+            cx,
+            "UPDATE trajets_partages SET termine = ? WHERE jeton = ?",
+            (True if EST_POSTGRES else 1, jeton),
+        )
+    return {"statut": "ok"}
 

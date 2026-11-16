@@ -53,3 +53,17 @@ create table if not exists suggestions_reperes (
   pseudo text,
   enregistre_le timestamptz not null default now()
 );
+
+alter table signalements add column if not exists bagage_niveau text default 'aucun';
+
+create table if not exists trajets_partages (
+  jeton text primary key,
+  appareil_id text,
+  origin_label text,
+  dest_label text,
+  lat double precision,
+  lon double precision,
+  commence_le timestamptz not null default now(),
+  expire_le timestamptz not null,
+  termine boolean not null default false
+);

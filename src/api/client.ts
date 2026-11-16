@@ -218,3 +218,103 @@ export async function supprimerSignalementDistant(id: string): Promise<boolean> 
     clearTimeout(timer);
   }
 }
+
+export type TrajetPartageCree = {
+  jeton: string;
+  url: string;
+  expireLe: string;
+};
+
+export type TrajetPartagePublic = {
+  jeton: string;
+  originLabel: string;
+  destLabel: string;
+  lat: number;
+  lon: number;
+  expireLe: string;
+  termine: boolean;
+  perime?: boolean;
+};
+
+export async function ouvrirTrajetPartage(donnees: {
+  originLabel: string;
+  destLabel: string;
+  lat: number;
+  lon: number;
+}): Promise<TrajetPartageCree | null> {
+  const base = urlApi();
+  if (!base) return null;
+  const controleur = new AbortController();
+  const timer = setTimeout(() => controleur.abort(), 10_000);
+  try {
+    const reponse = await fetch(`${base}/trajets-partages`, {
+      method: 'POST',
+      headers: await entetes(),
+      body: JSON.stringify(donnees),
+      signal: controleur.signal,
+    });
+    if (!reponse.ok) return null;
+    return (await reponse.json()) as TrajetPartageCree;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function majPositionTrajet(jeton: string, lat: number, lon: number): Promise<boolean> {
+  const base = urlApi();
+  if (!base) return false;
+  const controleur = new AbortController();
+  const timer = setTimeout(() => controleur.abort(), 8_000);
+  try {
+    const reponse = await fetch(`${base}/trajets-partages/${encodeURIComponent(jeton)}`, {
+      method: 'PATCH',
+      headers: await entetes(),
+      body: JSON.stringify({ lat, lon }),
+      signal: controleur.signal,
+    });
+    return reponse.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function terminerTrajetPartage(jeton: string): Promise<boolean> {
+  const base = urlApi();
+  if (!base) return false;
+  const controleur = new AbortController();
+  const timer = setTimeout(() => controleur.abort(), 8_000);
+  try {
+    const reponse = await fetch(`${base}/trajets-partages/${encodeURIComponent(jeton)}/terminer`, {
+      method: 'POST',
+      headers: await entetes(),
+      signal: controleur.signal,
+    });
+    return reponse.ok;
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+export async function lireTrajetPartage(jeton: string): Promise<TrajetPartagePublic | null> {
+  const base = urlApi();
+  if (!base) return null;
+  const controleur = new AbortController();
+  const timer = setTimeout(() => controleur.abort(), 8_000);
+  try {
+    const reponse = await fetch(`${base}/trajets-partages/${encodeURIComponent(jeton)}`, {
+      signal: controleur.signal,
+    });
+    if (!reponse.ok) return null;
+    return (await reponse.json()) as TrajetPartagePublic;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
